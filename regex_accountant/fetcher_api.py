@@ -1,13 +1,17 @@
 import abc
+import bdb
 import collections
 from dataclasses import dataclass
+from datetime import datetime
+from decimal import Decimal
 import inspect
 import logging
+import pdb
 import time
 import typing
 
-import requests
 from selenium import webdriver
+from selenium.webdriver.remote.webdriver import WebDriver
 
 
 @dataclass
@@ -25,18 +29,19 @@ ST = typing.TypeVar("ST", bound=Session)
 
 
 class Context(typing.Generic[CT, ST]):
-    def __init__(self, config: CT, session: ST):
+    def __init__(self, config: CT, session: ST, debug: bool):
         self.config = config
         self.session = session
+        self.debug = debug
         self._browser = None
 
     @property
-    def browser(self):
+    def browser(self) -> WebDriver:
         if not self._browser:
             self._browser = webdriver.Firefox()
         return self._browser
 
-    def close_browser(self):
+    def close_browser(self) -> None:
         if self._browser:
             self._browser.close()
             self._browser = None
@@ -44,11 +49,11 @@ class Context(typing.Generic[CT, ST]):
 
 class FlowState(abc.ABC):
     @abc.abstractmethod
-    def detect(self, ctx: Context):
+    def detect(self, ctx: Context) -> typing.Any:
         pass
 
     @abc.abstractmethod
-    def act(self, ctx: Context):
+    def act(self, ctx: Context) -> None:
         pass
 
 
@@ -62,7 +67,7 @@ class Flow(abc.ABC):
         if not self.states:
             raise Exception(f"Flow {self.__class__} does not define any states")
 
-    def detect(self, ctx: Context):
+    def detect(self, ctx: Context) -> FlowState:
         for state in self.states:
             try:
                 if state.detect(ctx):
@@ -73,27 +78,57 @@ class Flow(abc.ABC):
 
     def traverse(
         self,
-        destination: typing.Type[FlowState],
         ctx: Context,
-    ):
+        destination: typing.Type[FlowState],
+    ) -> None:
         state_history = []
         seen_states = collections.Counter()
-        while True:
-            state = self.detect(ctx)
-            logging.info(
-                f"Traversal for {self.__class__}: State {state.__class__.__name__}"
-            )
-            if isinstance(state, destination):
-                return
-            state_history.append(state.__class__.__name__)
-            seen_states[state.__class__.__name__] += 1
-            [(_, highest_count)] = seen_states.most_common(1)
-            if highest_count >= 3:
-                raise Exception(
-                    f"Flow {self.__class__} went into an infinite loop: {state_history}"
+        try:
+            while True:
+                state = self.detect(ctx)
+                logging.info(
+                    f"Traversal for {self.__class__}: State {state.__class__.__name__}"
                 )
-            state.act(ctx)
-            time.sleep(3)
+                if isinstance(state, destination):
+                    return
+                state_history.append(state.__class__.__name__)
+                seen_states[state.__class__.__name__] += 1
+                [(_, highest_count)] = seen_states.most_common(1)
+                if highest_count >= 3:
+                    raise Exception(
+                        f"Flow {self.__class__} went into an infinite loop: {state_history}"
+                    )
+                state.act(ctx)
+                time.sleep(3)
+        except Exception as e:
+            if ctx.debug:
+                try:
+                    pdb.set_trace()
+                except bdb.BdbQuit:
+                    pass
+            raise
+
+
+@dataclass
+class Transaction:
+    date_posted: datetime
+    date_cleared: datetime
+    currency: str
+    amount: Decimal
+    source_uid: str
+    description_long: str
+    description_short: str
+    client_long: str
+    client_short: str
+    payment_method_long: str
+    payment_method_short: str
+
+
+@dataclass
+class Transactions:
+    start_date: datetime
+    end_date: datetime
+    txns: list[Transaction]
 
 
 class Fetcher(abc.ABC):
@@ -102,5 +137,11 @@ class Fetcher(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def check_auth(self, ctx: Context):
+    def check_auth(self, ctx: Context) -> typing.Any:
+        pass
+
+    @abc.abstractmethod
+    def get_transactions(
+        self, ctx: Context, start_date: datetime, end_date: datetime
+    ) -> Transactions:
         pass
