@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "regex-accountant"
+version = "0.1.0"
+description = "Really stupid accounting tool. Uses regexes"
+authors = ["Radian LLC <contact+regex-accountant@intuitiveexplanations.com>"]
+readme = "README.md"
+packages = [{include = "regex_accountant"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+selenium = "^4.9.1"
+xdg-base-dirs = "^6.0.0"
+pyyaml = "^6.0"
+beautifulsoup4 = "^4.12.2"
+lxml = "^4.9.2"
+
+[tool.poetry.scripts]
+rac = "regex_accountant.cli:main"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
