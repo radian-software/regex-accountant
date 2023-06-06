@@ -3,6 +3,7 @@ import dateparser
 import importlib
 import json
 import logging
+import logging.config
 import sys
 
 from xdg_base_dirs import xdg_config_home, xdg_data_home
@@ -38,7 +39,7 @@ def write_sessions(sessions):
 
 
 def main():
-    logging.basicConfig(level="INFO")
+    logging.getLogger().setLevel("INFO")
 
     parser = argparse.ArgumentParser("rac")
 
@@ -58,6 +59,27 @@ def main():
         subparser.add_argument("--force-existing-session", action="store_true")
 
     args = parser.parse_args()
+
+    if args.debug:
+        logging.getLogger().setLevel("DEBUG")
+
+        # No idea how the eff logging configuration is supposed to
+        # work. I just want to configure the root logger, not everyone
+        # else's shit, thank you very much. I guess listing every
+        # Python module that does and could exist is a workaround??
+        for mod in (
+            "pdfminer.cmapdb",
+            "pdfminer.pdfdocument",
+            "pdfminer.pdfinterp",
+            "pdfminer.pdfpage",
+            "pdfminer.pdfparser",
+            "pdfminer.psparser",
+            "selenium.webdriver.common.selenium_manager",
+            "selenium.webdriver.common.service",
+            "selenium.webdriver.remote.remote_connection",
+            "urllib3.connectionpool",
+        ):
+            logging.getLogger(mod).setLevel("INFO")
 
     start_date = None
     end_date = None
@@ -109,10 +131,10 @@ def main():
                 raise
         if not auth_passed:
             logging.info("Auth failed, re-authenticating")
-            all_sessions[args.account] = utils.dataclass_to_dict(
-                fetcher.authenticate(ctx)
-            )
+            new_session = fetcher.authenticate(ctx)
+            all_sessions[args.account] = utils.dataclass_to_dict(new_session)
             write_sessions(all_sessions)
+            ctx.session = new_session
 
             logging.info("Checking auth after login")
             auth_passed = fetcher.check_auth(ctx)

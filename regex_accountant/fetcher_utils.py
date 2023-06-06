@@ -9,7 +9,7 @@ import typing
 def month_sequence(
     start_date: datetime, end_date: datetime
 ) -> typing.Generator[tuple[int, int], None, None]:
-    year, month = start_date.year, end_date.month
+    year, month = start_date.year, start_date.month
     while datetime(year=year, month=month, day=1) < end_date:
         yield year, month
         month += 1
