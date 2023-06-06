@@ -15,6 +15,7 @@ beautifulsoup4 = "^4.12.2"
 lxml = "^4.9.2"
 pdfminer-six = "^20221105"
 dateparser = "^1.1.8"
+curlinate = {path = "../curlinate", develop = true}
 
 [tool.poetry.scripts]
 rac = "regex_accountant.cli:main"

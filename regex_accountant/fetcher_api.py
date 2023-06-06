@@ -60,7 +60,9 @@ class FlowState(abc.ABC):
 class Flow(abc.ABC):
     def __init__(self):
         self.states = []
-        for attr in dir(self.__class__):
+        for attr in self.__dir__():
+            if not hasattr(self.__class__, attr):
+                continue
             state = getattr(self.__class__, attr)
             if inspect.isclass(state) and issubclass(state, FlowState):
                 self.states.append(state())  # type: ignore
@@ -116,6 +118,7 @@ class Transaction:
     currency: str
     amount: Decimal
     source_uid: str
+    description_details: str
     description_long: str
     description_short: str
     client_long: str

@@ -41,21 +41,37 @@ def main():
     logging.basicConfig(level="INFO")
 
     parser = argparse.ArgumentParser("rac")
-    parser.add_argument("account", type=str)
-    parser.add_argument("--start-date", type=str)
-    parser.add_argument("--end-date", type=str)
-    parser.add_argument("--debug", action="store_true")
-    parser.add_argument("--reauth", action="store_true")
+
+    subparsers = parser.add_subparsers(dest="cmd")
+
+    parser_auth = subparsers.add_parser("auth")
+    parser_auth.add_argument("account", type=str)
+
+    parser_txns = subparsers.add_parser("txns")
+    parser_txns.add_argument("account", type=str)
+    parser_txns.add_argument("--start-date", type=str)
+    parser_txns.add_argument("--end-date", type=str)
+
+    for subparser in (parser_auth, parser_txns):
+        subparser.add_argument("--debug", action="store_true")
+        subparser.add_argument("--force-new-session", action="store_true")
+        subparser.add_argument("--force-existing-session", action="store_true")
+
     args = parser.parse_args()
 
-    start_date = dateparser.parse(args.start_date)
-    end_date = dateparser.parse(args.end_date)
+    start_date = None
+    end_date = None
 
-    if not start_date:
-        raise Exception(f"Failed to recognize start date: {args.start_date}")
+    if args.cmd == "txns":
 
-    if not end_date:
-        raise Exception(f"Failed to recognize start date: {args.end_date}")
+        start_date = dateparser.parse(args.start_date)
+        end_date = dateparser.parse(args.end_date)
+
+        if not start_date:
+            raise Exception(f"Failed to recognize start date: {args.start_date}")
+
+        if not end_date:
+            raise Exception(f"Failed to recognize start date: {args.end_date}")
 
     all_config = read_config()
     all_sessions = read_sessions()
@@ -71,7 +87,7 @@ def main():
         all_config["accounts"][args.account]["config"], Config
     )
 
-    if args.reauth:
+    if args.force_new_session:
         account_session = None
     else:
         try:
@@ -89,6 +105,8 @@ def main():
             auth_passed = fetcher.check_auth(ctx)
         except Exception:
             auth_passed = False
+            if args.force_existing_session:
+                raise
         if not auth_passed:
             logging.info("Auth failed, re-authenticating")
             all_sessions[args.account] = utils.dataclass_to_dict(
@@ -96,9 +114,20 @@ def main():
             )
             write_sessions(all_sessions)
 
-        logging.info("Getting transactions")
-        txns = fetcher.get_transactions(ctx, start_date, end_date)
-        print(txns)
+            logging.info("Checking auth after login")
+            auth_passed = fetcher.check_auth(ctx)
+            if not auth_passed:
+                raise Exception("Auth failed even after login")
+
+        if args.cmd == "auth":
+
+            print("Session is authenticated")
+
+        if args.cmd == "txns":
+
+            logging.info("Getting transactions")
+            txns = fetcher.get_transactions(ctx, start_date, end_date)
+            print(json.dumps(utils.dataclass_to_dict(txns), indent=2, default=str))
 
     finally:
         ctx.close_browser()
