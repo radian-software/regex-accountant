@@ -130,7 +130,10 @@ def main():
             if args.force_existing_session:
                 raise
         if not auth_passed:
-            logging.info("Auth failed, re-authenticating")
+            if args.force_new_session:
+                logging.info("Forcing to authenticate a new session")
+            else:
+                logging.info("Auth failed, re-authenticating")
             new_session = fetcher.authenticate(ctx)
             all_sessions[args.account] = utils.dataclass_to_dict(new_session)
             write_sessions(all_sessions)
