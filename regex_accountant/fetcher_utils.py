@@ -80,7 +80,9 @@ def parse_currency(currency: str) -> CurrencyInfo:
     assert "$" in currency
     return CurrencyInfo(
         currency="USD",
-        amount=Decimal(locale.delocalize(currency.strip().lstrip("$").strip())),
+        amount=Decimal(
+            locale.delocalize(currency.replace("$", "").strip()).replace(",", "")
+        ),
     )
 
 

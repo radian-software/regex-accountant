@@ -8,6 +8,7 @@ import inspect
 import logging
 import pdb
 import time
+import traceback
 import typing
 
 from selenium import webdriver
@@ -102,8 +103,9 @@ class Flow(abc.ABC):
                     )
                 state.act(ctx)
                 time.sleep(3)
-        except Exception as e:
+        except Exception:
             if ctx.debug:
+                traceback.print_exc()
                 try:
                     pdb.set_trace()
                 except bdb.BdbQuit:

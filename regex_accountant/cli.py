@@ -39,7 +39,11 @@ def write_sessions(sessions):
 
 
 def main():
-    logging.getLogger().setLevel("INFO")
+    logging.basicConfig(
+        level="INFO",
+        format="%(asctime)s %(levelname)s:%(name)s:%(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
 
     parser = argparse.ArgumentParser("rac")
 
@@ -50,8 +54,8 @@ def main():
 
     parser_txns = subparsers.add_parser("txns")
     parser_txns.add_argument("account", type=str)
-    parser_txns.add_argument("--start-date", type=str)
-    parser_txns.add_argument("--end-date", type=str)
+    parser_txns.add_argument("--start-date", type=str, required=True)
+    parser_txns.add_argument("--end-date", type=str, required=True)
 
     for subparser in (parser_auth, parser_txns):
         subparser.add_argument("--debug", action="store_true")
@@ -68,6 +72,7 @@ def main():
         # else's shit, thank you very much. I guess listing every
         # Python module that does and could exist is a workaround??
         for mod in (
+            "charset_normalizer",
             "pdfminer.cmapdb",
             "pdfminer.pdfdocument",
             "pdfminer.pdfinterp",
@@ -78,6 +83,7 @@ def main():
             "selenium.webdriver.common.service",
             "selenium.webdriver.remote.remote_connection",
             "urllib3.connectionpool",
+            "urllib3.util.retry",
         ):
             logging.getLogger(mod).setLevel("INFO")
 
@@ -122,13 +128,18 @@ def main():
     ctx = api.Context(account_config, account_session, args.debug)
     try:
         fetcher = Fetcher()
-        try:
-            logging.info("Checking auth")
-            auth_passed = fetcher.check_auth(ctx)
-        except Exception:
+        if args.force_new_session:
             auth_passed = False
-            if args.force_existing_session:
-                raise
+        else:
+            try:
+                logging.info("Checking auth")
+                auth_passed = fetcher.check_auth(ctx)
+                if not auth_passed:
+                    raise RuntimeError("Auth failed")
+            except Exception:
+                auth_passed = False
+                if args.force_existing_session:
+                    raise
         if not auth_passed:
             if args.force_new_session:
                 logging.info("Forcing to authenticate a new session")
