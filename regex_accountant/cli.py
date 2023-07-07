@@ -11,6 +11,7 @@ from xdg_base_dirs import xdg_config_home, xdg_data_home
 import yaml
 
 import regex_accountant.fetcher_api as api
+import regex_accountant.utils as utils
 
 
 def read_config():
@@ -145,7 +146,7 @@ def main():
             else:
                 logging.info("Auth failed, re-authenticating")
             new_session = fetcher.authenticate(ctx)
-            all_sessions[args.account] = dw.asdict(new_session)
+            all_sessions[args.account] = utils.asdict(new_session)
             write_sessions(all_sessions)
             ctx.session = new_session
 
@@ -162,7 +163,7 @@ def main():
 
             logging.info("Getting transactions")
             txns = fetcher.get_transactions(ctx, start_date, end_date)
-            print(json.dumps(dw.asdict(txns), indent=2, default=str))
+            print(json.dumps(utils.asdict(txns), indent=2, default=str))
 
     finally:
         ctx.close_browser()

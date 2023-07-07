@@ -120,13 +120,14 @@ class Transaction:
     currency: str
     amount: Decimal
     source_uid: str
-    description_details: str
-    description_long: str
-    description_short: str
-    client_long: str
-    client_short: str
-    payment_method_long: str
-    payment_method_short: str
+    description: str
+    description_short: str = ""
+    description_details: str = ""
+    client: str = ""
+    client_short: str = ""
+    payment_method: str = ""
+    payment_method_short: str = ""
+    account_id: str = ""
 
 
 @dataclass
