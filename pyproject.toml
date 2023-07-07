@@ -16,6 +16,7 @@ lxml = "^4.9.2"
 pdfminer-six = "^20221105"
 dateparser = "^1.1.8"
 curlinate = {path = "../curlinate", develop = true}
+dataclass-wizard = "^0.22.2"
 
 [tool.poetry.scripts]
 rac = "regex_accountant.cli:main"

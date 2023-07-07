@@ -6,11 +6,11 @@ import logging
 import logging.config
 import sys
 
+import dataclass_wizard as dw
 from xdg_base_dirs import xdg_config_home, xdg_data_home
 import yaml
 
 import regex_accountant.fetcher_api as api
-import regex_accountant.utils as utils
 
 
 def read_config():
@@ -111,16 +111,15 @@ def main():
     Config = module.Config
     Session = module.Session
 
-    account_config = utils.dict_to_dataclass(
-        all_config["accounts"][args.account]["config"], Config
-    )
+    account_config = dw.fromdict(Config, all_config["accounts"][args.account]["config"])
 
     if args.force_new_session:
         account_session = None
     else:
         try:
-            account_session = utils.dict_to_dataclass(
-                all_sessions.get(args.account), Session
+            account_session = dw.fromdict(
+                Session,
+                all_sessions.get(args.account),
             )
         except Exception:
             account_session = None
@@ -146,7 +145,7 @@ def main():
             else:
                 logging.info("Auth failed, re-authenticating")
             new_session = fetcher.authenticate(ctx)
-            all_sessions[args.account] = utils.dataclass_to_dict(new_session)
+            all_sessions[args.account] = dw.asdict(new_session)
             write_sessions(all_sessions)
             ctx.session = new_session
 
@@ -163,7 +162,7 @@ def main():
 
             logging.info("Getting transactions")
             txns = fetcher.get_transactions(ctx, start_date, end_date)
-            print(json.dumps(utils.dataclass_to_dict(txns), indent=2, default=str))
+            print(json.dumps(dw.asdict(txns), indent=2, default=str))
 
     finally:
         ctx.close_browser()
