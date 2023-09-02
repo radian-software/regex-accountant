@@ -1,9 +1,15 @@
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
 from functools import total_ordering
 import locale
 import typing
+
+
+def read_from_user(prompt):
+    print(prompt, end="")
+    return input()
 
 
 def month_sequence(
@@ -102,3 +108,12 @@ def scale_prices(
         largest_price_idx, _ = max(enumerate(new_prices), key=lambda item: abs(item[1]))
         new_prices[largest_price_idx] -= error
     return new_prices
+
+
+@contextmanager
+def with_iframe(iframe):
+    try:
+        iframe.parent.switch_to.frame(iframe)
+        yield
+    finally:
+        iframe.parent.switch_to.default_content()

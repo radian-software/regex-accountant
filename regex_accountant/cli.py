@@ -163,7 +163,9 @@ def main():
 
             logging.info("Getting transactions")
             txns = fetcher.get_transactions(ctx, start_date, end_date)
-            print(json.dumps(utils.asdict(txns), indent=2, default=str))
+            print(
+                json.dumps(utils.prune_empty(utils.asdict(txns)), indent=2, default=str)
+            )
 
     finally:
         ctx.close_browser()
