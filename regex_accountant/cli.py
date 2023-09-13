@@ -1,42 +1,19 @@
 import argparse
 import dateparser
+from datetime import datetime
 import importlib
 import json
 import logging
 import logging.config
 import sys
+from typing import Type
 
 import dataclass_wizard as dw
-from xdg_base_dirs import xdg_config_home, xdg_data_home
-import yaml
 
 import regex_accountant.fetcher_api as api
+import regex_accountant.model as model
+import regex_accountant.persist as persist
 import regex_accountant.utils as utils
-
-
-def read_config():
-    try:
-        with open(xdg_config_home() / "regex-accountant" / "config.yaml") as f:
-            return yaml.safe_load(f)
-    except FileNotFoundError:
-        return {}
-
-
-def read_sessions():
-    try:
-        with open(xdg_data_home() / "regex-accountant" / "sessions.json") as f:
-            return json.load(f)
-    except FileNotFoundError:
-        return {}
-
-
-def write_sessions(sessions):
-    d = xdg_data_home() / "regex-accountant"
-    d.mkdir(parents=True, exist_ok=True)
-    with open(d / "sessions.json.tmp", "w") as f:
-        json.dump(sessions, f, indent=2)
-        f.write("\n")
-    (d / "sessions.json.tmp").rename(d / "sessions.json")
 
 
 def main():
@@ -58,8 +35,13 @@ def main():
     parser_txns.add_argument("--start-date", type=str, required=True)
     parser_txns.add_argument("--end-date", type=str, required=True)
 
-    for subparser in (parser_auth, parser_txns):
+    parser_import = subparsers.add_parser("import")
+    parser_import.add_argument("tag", type=str, nargs="?", default="")
+
+    for subparser in (parser_auth, parser_txns, parser_import):
         subparser.add_argument("--debug", action="store_true")
+
+    for subparser in (parser_auth, parser_txns):
         subparser.add_argument("--force-new-session", action="store_true")
         subparser.add_argument("--force-existing-session", action="store_true")
 
@@ -102,72 +84,106 @@ def main():
         if not end_date:
             raise Exception(f"Failed to recognize start date: {args.end_date}")
 
-    all_config = read_config()
-    all_sessions = read_sessions()
+        if start_date >= end_date:
+            raise Exception("Start date needs to be before end date")
 
-    module_name = all_config["accounts"][args.account]["module"]
+    if args.cmd == "auth" or args.cmd == "txns":
 
-    module = importlib.import_module(module_name)
-    Fetcher = module.Fetcher
-    Config = module.Config
-    Session = module.Session
+        all_config = persist.read_config()
+        all_sessions = persist.read_sessions()
 
-    account_config = dw.fromdict(Config, all_config["accounts"][args.account]["config"])
+        module_name = all_config["accounts"][args.account]["module"]
 
-    if args.force_new_session:
-        account_session = None
-    else:
-        try:
-            account_session = dw.fromdict(
-                Session,
-                all_sessions.get(args.account),
-            )
-        except Exception:
-            account_session = None
+        module = importlib.import_module(module_name)
+        Fetcher: Type[api.Fetcher] = module.Fetcher
+        Config: Type[api.Config] = module.Config
+        Session: Type[api.Session] = module.Session
 
-    ctx = api.Context(account_config, account_session, args.debug)
-    try:
-        fetcher = Fetcher()
+        account_config = dw.fromdict(
+            Config, all_config["accounts"][args.account]["config"]
+        )
+
         if args.force_new_session:
-            auth_passed = False
+            account_session = None
         else:
             try:
-                logging.info("Checking auth")
+                account_session = dw.fromdict(
+                    Session,
+                    all_sessions.get(args.account),
+                )
+            except Exception:
+                account_session = None
+
+        ctx = api.Context(account_config, account_session, args.debug)
+        try:
+            fetcher = Fetcher()
+            if args.force_new_session:
+                auth_passed = False
+            else:
+                try:
+                    logging.info("Checking auth")
+                    auth_passed = fetcher.check_auth(ctx)
+                    if not auth_passed:
+                        raise RuntimeError("Auth failed")
+                except Exception:
+                    auth_passed = False
+                    if args.force_existing_session:
+                        raise
+            if not auth_passed:
+                if args.force_new_session:
+                    logging.info("Forcing to authenticate a new session")
+                else:
+                    logging.info("Auth failed, re-authenticating")
+                new_session = fetcher.authenticate(ctx)
+                all_sessions[args.account] = utils.asdict(new_session)
+                persist.write_sessions(all_sessions)
+                ctx.session = new_session
+
+                logging.info("Checking auth after login")
                 auth_passed = fetcher.check_auth(ctx)
                 if not auth_passed:
-                    raise RuntimeError("Auth failed")
-            except Exception:
-                auth_passed = False
-                if args.force_existing_session:
-                    raise
-        if not auth_passed:
-            if args.force_new_session:
-                logging.info("Forcing to authenticate a new session")
-            else:
-                logging.info("Auth failed, re-authenticating")
-            new_session = fetcher.authenticate(ctx)
-            all_sessions[args.account] = utils.asdict(new_session)
-            write_sessions(all_sessions)
-            ctx.session = new_session
+                    raise Exception("Auth failed even after login")
 
-            logging.info("Checking auth after login")
-            auth_passed = fetcher.check_auth(ctx)
-            if not auth_passed:
-                raise Exception("Auth failed even after login")
+            if args.cmd == "auth":
 
-        if args.cmd == "auth":
+                logging.info("Session is authenticated")
 
-            print("Session is authenticated")
+            if args.cmd == "txns":
 
-        if args.cmd == "txns":
+                assert isinstance(start_date, datetime)
+                assert isinstance(end_date, datetime)
 
-            logging.info("Getting transactions")
-            txns = fetcher.get_transactions(ctx, start_date, end_date)
-            print(
-                json.dumps(utils.prune_empty(utils.asdict(txns)), indent=2, default=str)
-            )
+                logging.info("Getting transactions")
+                txns = fetcher.get_transactions(ctx, start_date, end_date)
+                logging.info(f"Got {len(txns)} transactions")
+                tag = persist.write_to_staging_area(
+                    f"txns_{args.account}",
+                    utils.asdict(
+                        model.StagedTransactions(
+                            account=args.account,
+                            start_date=start_date,
+                            end_date=end_date,
+                            txns=txns,
+                        ),
+                        prune=True,
+                    ),
+                )
+                logging.info(f"Wrote to staging area as {tag}")
 
-    finally:
-        ctx.close_browser()
+        finally:
+            ctx.close_browser()
+
+    if args.cmd == "import":
+
+        staged = dw.fromdict(
+            model.StagedTransactions, persist.read_from_staging_area(args.tag)
+        )
+        store = model.TransactionStore()
+        if ts := persist.read_txns(staged.account):
+            store.accts[staged.account] = dw.fromdict(model.TransactionSet, ts)
+        store.import_transactions(staged)
+        persist.write_txns(
+            staged.account, utils.asdict(store.accts[staged.account], prune=True)
+        )
 
     sys.exit(0)

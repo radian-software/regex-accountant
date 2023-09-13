@@ -30,7 +30,7 @@ ST = typing.TypeVar("ST", bound=Session)
 
 
 class Context(typing.Generic[CT, ST]):
-    def __init__(self, config: CT, session: ST, debug: bool):
+    def __init__(self, config: CT, session: ST | None, debug: bool):
         self.config = config
         self.session = session
         self.debug = debug
@@ -130,13 +130,6 @@ class Transaction:
     account_id: str = ""
 
 
-@dataclass
-class Transactions:
-    start_date: datetime
-    end_date: datetime
-    txns: list[Transaction]
-
-
 class Fetcher(abc.ABC):
     @abc.abstractmethod
     def authenticate(self, ctx: Context) -> Session:
@@ -149,5 +142,5 @@ class Fetcher(abc.ABC):
     @abc.abstractmethod
     def get_transactions(
         self, ctx: Context, start_date: datetime, end_date: datetime
-    ) -> Transactions:
+    ) -> list[Transaction]:
         pass

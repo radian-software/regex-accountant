@@ -1,13 +1,13 @@
+from datetime import datetime
+from typing import TypeVar
+
 import dataclass_wizard as dw
 
-# https://github.com/rnag/dataclass-wizard/issues/92
-def asdict(obj):
-    dw.DumpMeta(key_transform="SNAKE").bind_to(obj.__class__)
-    d = dw.asdict(obj)
-    return d
+
+T = TypeVar("T")
 
 
-def prune_empty(obj):
+def prune_empty(obj: T) -> T:
     if isinstance(obj, dict):
         for k, v in list(obj.items()):
             if not v:
@@ -16,5 +16,18 @@ def prune_empty(obj):
             obj[k] = prune_empty(obj[k])
         return obj
     if isinstance(obj, list):
-        return [prune_empty(elt) for elt in obj]
+        return [prune_empty(elt) for elt in obj]  # type: ignore
     return obj
+
+
+# https://github.com/rnag/dataclass-wizard/issues/92
+def asdict(obj, prune=False) -> dict:
+    dw.DumpMeta(key_transform="SNAKE").bind_to(obj.__class__)
+    d = dw.asdict(obj)
+    if prune:
+        d = prune_empty(d)
+    return d
+
+
+def asdate(dt: datetime) -> str:
+    return dt.strftime("%Y-%m-%d")
