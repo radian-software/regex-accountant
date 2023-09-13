@@ -32,8 +32,10 @@ def main():
 
     parser_txns = subparsers.add_parser("txns")
     parser_txns.add_argument("account", type=str)
-    parser_txns.add_argument("--start-date", type=str, required=True)
-    parser_txns.add_argument("--end-date", type=str, required=True)
+    parser_txns.add_argument("--start-date", type=str, default="1900-01-01")
+    parser_txns.add_argument(
+        "--end-date", type=str, default=utils.asdate(datetime.now())
+    )
 
     parser_import = subparsers.add_parser("import")
     parser_import.add_argument("tag", type=str, nargs="?", default="")
