@@ -1,6 +1,7 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import itertools
 import json
+import logging
 import re
 
 from xdg_base_dirs import xdg_cache_home, xdg_config_home, xdg_data_home
@@ -116,3 +117,28 @@ def read_from_staging_area(tag: str) -> dict:
             tag += str(idx)
     with open(xdg_cache_home() / "regex-accountant" / "staging" / f"{tag}.json") as f:
         return json.load(f)["data"]
+
+
+def read_from_fetcher_cache(ident: str, ttl: timedelta | None = None) -> str | None:
+    fname = xdg_cache_home() / "regex-accountant" / "fetcher-cache" / ident
+    try:
+        if ttl is not None:
+            if datetime.now() - datetime.fromtimestamp(fname.stat().st_mtime) > ttl:
+                logging.debug(
+                    f"Removing {ident} from fetcher cache as it has passed ttl"
+                )
+                fname.unlink()
+                return None
+        with open(fname) as f:
+            val = f.read()
+            logging.debug(f"Read {ident} from fetcher cache")
+            return val
+    except FileNotFoundError:
+        return None
+
+
+def write_to_fetcher_cache(ident: str, val: str) -> None:
+    fname = xdg_cache_home() / "regex-accountant" / "fetcher-cache" / ident
+    fname.parent.mkdir(parents=True, exist_ok=True)
+    with open(fname, "w") as f:
+        f.write(val)

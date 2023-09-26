@@ -1,10 +1,13 @@
 from contextlib import contextmanager
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 from functools import total_ordering
 import locale
 import typing
+
+
+import regex_accountant.persist as persist
 
 
 def read_from_user(prompt):
@@ -81,13 +84,32 @@ class CurrencyInfo:
         return total
 
 
+UNICODE_MINUS = "\u2212"
+
+
+CURRENCY_SYMBOLS = {
+    "CA$": "CAD",
+    "$": "USD",
+    "€": "EUR",
+}
+
+
 def parse_currency(currency: str) -> CurrencyInfo:
-    # Todo: support other currencies than USD, this will be needed soon
-    assert "$" in currency
+    # Todo: support other currencies than USD and EUR, this will be
+    # needed soon
+    denom = None
+    for sym, name in CURRENCY_SYMBOLS.items():
+        if sym in currency:
+            assert not denom, "found multiple currency symbols in string"
+            denom = name
+            currency = currency.replace(sym, "")
+    assert denom, "unable to find currency symbol in string"
     return CurrencyInfo(
-        currency="USD",
+        currency=denom,
         amount=Decimal(
-            locale.delocalize(currency.replace("$", "").strip()).replace(",", "")
+            locale.delocalize(
+                currency.strip().replace(" ", "").replace(UNICODE_MINUS, "-")
+            ).replace(",", "")
         ),
     )
 
@@ -117,3 +139,22 @@ def with_iframe(iframe):
         yield
     finally:
         iframe.parent.switch_to.default_content()
+
+
+def cached(ident: str, ttl: timedelta | None = None):
+    def decorator(func: typing.Callable):
+
+        saved_val = None
+
+        def decorated(*args, **kwargs):
+            nonlocal saved_val
+            if val := persist.read_from_fetcher_cache(ident, ttl):
+                saved_val = val
+                return val
+            val = func(*args, **kwargs)
+            persist.write_to_fetcher_cache(ident, val)
+            return val
+
+        return decorated
+
+    return decorator
