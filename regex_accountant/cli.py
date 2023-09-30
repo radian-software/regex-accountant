@@ -198,8 +198,11 @@ def main():
 
     if args.cmd == "import":
 
+        staged_data = persist.read_from_staging_area(args.tag)
+        staged_data["txns"] = staged_data.get("txns") or []
         staged = dw.fromdict(
-            model.StagedTransactions, persist.read_from_staging_area(args.tag)
+            model.StagedTransactions,
+            staged_data,
         )
         store = model.TransactionStore()
         if ts := persist.read_txns(staged.account):

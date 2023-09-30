@@ -37,6 +37,9 @@ class TransactionSet:
     def import_transactions(
         self, txns: list[api.Transaction], start_date: datetime, end_date: datetime
     ) -> None:
+        if not txns:
+            logging.info(f"No transactions to import")
+            return
         assert start_date < end_date
         if end_date < self.start_date:
             raise RuntimeError(
@@ -53,13 +56,9 @@ class TransactionSet:
         shared_ids = known_ids & new_ids
         orig_txns = {txn.source_uid: txn for txn in self.txns}
         if not shared_ids:
-            # First case also covers the case where both conditions
-            # apply, which should be unusual but could occur if it has
-            # been so long that all the existing recorded transactions
-            # have disappeared from upstream.
-            if end_date >= self.end_date:
+            if start_date >= self.end_date:
                 self.txns = self.txns + txns
-            elif start_date <= self.start_date:
+            elif end_date <= self.start_date:
                 self.txns = txns + self.txns
             else:
                 raise RuntimeError
