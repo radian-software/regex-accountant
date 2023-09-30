@@ -138,7 +138,10 @@ def main():
             else:
                 try:
                     logging.info("Checking auth")
+                    old_debug = ctx.debug
+                    ctx.debug = False
                     auth_passed = fetcher.check_auth(ctx)
+                    ctx.debug = old_debug
                     if not auth_passed:
                         raise RuntimeError("Auth failed")
                 except Exception:
@@ -171,6 +174,10 @@ def main():
 
                 logging.info("Getting transactions")
                 txns = fetcher.get_transactions(ctx, start_date, end_date)
+                txn_uids = [txn.source_uid for txn in txns]
+                assert len(txn_uids) == len(
+                    set(txn_uids)
+                ), "non-unique txn ids returned"
                 logging.info(f"Got {len(txns)} transactions")
                 tag = persist.write_to_staging_area(
                     f"txns_{args.account}",

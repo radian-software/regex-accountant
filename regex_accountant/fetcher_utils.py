@@ -106,10 +106,13 @@ def parse_currency(currency: str) -> CurrencyInfo:
     assert denom, "unable to find currency symbol in string"
     return CurrencyInfo(
         currency=denom,
-        amount=Decimal(
-            locale.delocalize(
-                currency.strip().replace(" ", "").replace(UNICODE_MINUS, "-")
-            ).replace(",", "")
+        amount=round(
+            Decimal(
+                locale.delocalize(
+                    currency.strip().replace(" ", "").replace(UNICODE_MINUS, "-")
+                ).replace(",", "")
+            ),
+            2,
         ),
     )
 
