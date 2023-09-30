@@ -127,6 +127,7 @@ class Transaction:
     client_short: str = ""
     payment_method: str = ""
     payment_method_short: str = ""
+    payment_method_long: str = ""
     account_id: str = ""
 
 

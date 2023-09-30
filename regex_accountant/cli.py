@@ -5,6 +5,7 @@ import importlib
 import json
 import logging
 import logging.config
+import subprocess
 import sys
 from typing import Type
 
@@ -101,9 +102,22 @@ def main():
         Config: Type[api.Config] = module.Config
         Session: Type[api.Session] = module.Session
 
-        account_config = dw.fromdict(
-            Config, all_config["accounts"][args.account]["config"]
-        )
+        account_config_raw = all_config["accounts"][args.account]["config"]
+        if all_config.get("enable_command_execution_on_config_load"):
+            for key, val in account_config_raw.items():
+                if val.startswith("!"):
+                    val = val[1:]
+                    if not val.startswith("!"):
+                        val = (
+                            subprocess.run(
+                                ["bash", "-c", val], stdout=subprocess.PIPE, check=True
+                            )
+                            .stdout.decode()
+                            .strip()
+                        )
+                account_config_raw[key] = val
+
+        account_config = dw.fromdict(Config, account_config_raw)
 
         if args.force_new_session:
             account_session = None
