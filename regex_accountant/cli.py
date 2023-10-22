@@ -7,6 +7,7 @@ import logging
 import logging.config
 import subprocess
 import sys
+import traceback
 from typing import Type
 
 import dataclass_wizard as dw
@@ -175,9 +176,17 @@ def main():
                 logging.info("Getting transactions")
                 txns = fetcher.get_transactions(ctx, start_date, end_date)
                 txn_uids = [txn.source_uid for txn in txns]
-                assert len(txn_uids) == len(
-                    set(txn_uids)
-                ), "non-unique txn ids returned"
+                try:
+                    assert len(txn_uids) == len(
+                        set(txn_uids)
+                    ), "non-unique txn ids returned"
+                except Exception:
+                    if ctx.debug:
+                        traceback.print_exc()
+                        import pdb
+
+                        pdb.set_trace()
+                    raise
                 logging.info(f"Got {len(txns)} transactions")
                 tag = persist.write_to_staging_area(
                     f"txns_{args.account}",
