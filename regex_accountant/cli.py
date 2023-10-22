@@ -2,9 +2,9 @@ import argparse
 import dateparser
 from datetime import datetime
 import importlib
-import json
 import logging
 import logging.config
+import os
 import subprocess
 import sys
 import traceback
@@ -27,7 +27,7 @@ def main():
 
     parser = argparse.ArgumentParser("rac")
 
-    subparsers = parser.add_subparsers(dest="cmd")
+    subparsers = parser.add_subparsers(dest="cmd", required=True)
 
     parser_auth = subparsers.add_parser("auth")
     parser_auth.add_argument("account", type=str)
@@ -42,7 +42,10 @@ def main():
     parser_import = subparsers.add_parser("import")
     parser_import.add_argument("tag", type=str, nargs="?", default="")
 
-    for subparser in (parser_auth, parser_txns, parser_import):
+    parser_ui = subparsers.add_parser("ui")
+    parser_ui.add_argument("--port", type=int, default=8395)
+
+    for subparser in (parser_auth, parser_txns, parser_import, parser_ui):
         subparser.add_argument("--debug", action="store_true")
 
     for subparser in (parser_auth, parser_txns):
@@ -220,5 +223,24 @@ def main():
         persist.write_txns(
             staged.account, utils.asdict(store.accts[staged.account], prune=True)
         )
+
+    if args.cmd == "ui":
+
+        res = subprocess.run(
+            [
+                "flask",
+                "run",
+                "-h",
+                "127.0.0.1",
+                "-p",
+                str(args.port),
+                "--debug" if args.debug else "--no-debug",
+            ],
+            env={
+                **os.environ,
+                "FLASK_APP": "regex_accountant.server:app",
+            },
+        )
+        sys.exit(res)
 
     sys.exit(0)
