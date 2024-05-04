@@ -51,6 +51,8 @@ def main():
     for subparser in (parser_auth, parser_txns):
         subparser.add_argument("--force-new-session", action="store_true")
         subparser.add_argument("--force-existing-session", action="store_true")
+        subparser.add_argument("--force-reauth", action="store_true")
+        subparser.add_argument("--no-check-auth", action="store_true")
 
     args = parser.parse_args()
 
@@ -137,23 +139,26 @@ def main():
         ctx = api.Context(account_config, account_session, args.debug)
         try:
             fetcher = Fetcher()
-            if args.force_new_session:
+            if args.no_check_auth:
+                auth_passed = True
+            elif args.force_new_session or args.force_reauth:
                 auth_passed = False
             else:
+                old_debug = ctx.debug
+                ctx.debug = False
                 try:
                     logging.info("Checking auth")
-                    old_debug = ctx.debug
-                    ctx.debug = False
                     auth_passed = fetcher.check_auth(ctx)
-                    ctx.debug = old_debug
                     if not auth_passed:
                         raise RuntimeError("Auth failed")
                 except Exception:
                     auth_passed = False
                     if args.force_existing_session:
                         raise
+                finally:
+                    ctx.debug = old_debug
             if not auth_passed:
-                if args.force_new_session:
+                if args.force_new_session or args.force_reauth:
                     logging.info("Forcing to authenticate a new session")
                 else:
                     logging.info("Auth failed, re-authenticating")

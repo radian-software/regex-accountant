@@ -91,12 +91,23 @@ CURRENCY_SYMBOLS = {
     "CA$": "CAD",
     "$": "USD",
     "€": "EUR",
+    "£": "GBP",
+    "SEK": "SEK",
 }
 
 
+def normalize_amount(amount):
+    return round(
+        Decimal(
+            locale.delocalize(
+                amount.strip().replace(" ", "").replace(UNICODE_MINUS, "-")
+            ).replace(",", "")
+        ),
+        2,
+    )
+
+
 def parse_currency(currency: str) -> CurrencyInfo:
-    # Todo: support other currencies than USD and EUR, this will be
-    # needed soon
     denom = None
     for sym, name in CURRENCY_SYMBOLS.items():
         if sym in currency:
@@ -106,14 +117,7 @@ def parse_currency(currency: str) -> CurrencyInfo:
     assert denom, "unable to find currency symbol in string"
     return CurrencyInfo(
         currency=denom,
-        amount=round(
-            Decimal(
-                locale.delocalize(
-                    currency.strip().replace(" ", "").replace(UNICODE_MINUS, "-")
-                ).replace(",", "")
-            ),
-            2,
-        ),
+        amount=normalize_amount(currency),
     )
 
 

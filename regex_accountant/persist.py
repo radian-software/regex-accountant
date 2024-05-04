@@ -3,6 +3,7 @@ import itertools
 import json
 import logging
 import re
+import shutil
 
 from xdg_base_dirs import xdg_cache_home, xdg_config_home, xdg_data_home
 import yaml
@@ -46,6 +47,10 @@ def read_txns(account: str):
 def write_txns(account: str, txns: dict):
     d = xdg_data_home() / "regex-accountant" / "transactions"
     d.mkdir(parents=True, exist_ok=True)
+    try:
+        shutil.copy(d / f"{account}.json", d / f"{account}.json.bak")
+    except FileNotFoundError:
+        pass
     with open(d / f"{account}.json.tmp", "w") as f:
         json.dump(txns, f, indent=2)
         f.write("\n")

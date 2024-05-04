@@ -61,7 +61,7 @@ class TransactionSet:
             elif end_date <= self.start_date:
                 self.txns = txns + self.txns
             else:
-                raise RuntimeError
+                raise RuntimeError("no txn overlap, please use wider timerange")
         else:
             replacement_start, replacement_end = self._find_shared_slice(
                 self.txns, shared_ids
