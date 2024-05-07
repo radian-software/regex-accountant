@@ -5,6 +5,13 @@
     <title>regex_accountant</title>
   </head>
   <body>
-    Hello, world!
+    <h1>Transactions</h1>
+    <ul>
+      {% for txn in txns %}
+      <li>
+        <p>{{ txn.description }}</p>
+      </li>
+      {% endfor %}
+    </ul>
   </body>
 </html>

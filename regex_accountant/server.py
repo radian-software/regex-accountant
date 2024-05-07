@@ -21,7 +21,7 @@ class Server:
 
         @app.route("/")
         def _route_app():
-            return flask.render_template("app.html")
+            return flask.render_template("app.html", txns=self.txns)
 
         return app
 
