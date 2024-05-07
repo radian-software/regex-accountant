@@ -8,22 +8,20 @@ import os
 import subprocess
 import sys
 import traceback
-from typing import Type
+from typing import cast, Type
 
 import dataclass_wizard as dw
+from dataclass_wizard.loaders import JSONObject
 
 import regex_accountant.fetcher_api as api
+import regex_accountant.log as log
 import regex_accountant.model as model
 import regex_accountant.persist as persist
 import regex_accountant.utils as utils
 
 
 def main():
-    logging.basicConfig(
-        level="INFO",
-        format="%(asctime)s %(levelname)s:%(name)s:%(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
+    log.setup_logger(debug=False)
 
     parser = argparse.ArgumentParser("rac")
 
@@ -57,27 +55,7 @@ def main():
     args = parser.parse_args()
 
     if args.debug:
-        logging.getLogger().setLevel("DEBUG")
-
-        # No idea how the eff logging configuration is supposed to
-        # work. I just want to configure the root logger, not everyone
-        # else's shit, thank you very much. I guess listing every
-        # Python module that does and could exist is a workaround??
-        for mod in (
-            "charset_normalizer",
-            "pdfminer.cmapdb",
-            "pdfminer.pdfdocument",
-            "pdfminer.pdfinterp",
-            "pdfminer.pdfpage",
-            "pdfminer.pdfparser",
-            "pdfminer.psparser",
-            "selenium.webdriver.common.selenium_manager",
-            "selenium.webdriver.common.service",
-            "selenium.webdriver.remote.remote_connection",
-            "urllib3.connectionpool",
-            "urllib3.util.retry",
-        ):
-            logging.getLogger(mod).setLevel("INFO")
+        log.setup_logger(debug=True)
 
     start_date = None
     end_date = None
@@ -131,7 +109,7 @@ def main():
             try:
                 account_session = dw.fromdict(
                     Session,
-                    all_sessions.get(args.account),
+                    cast(JSONObject, all_sessions.get(args.account)),
                 )
             except Exception:
                 account_session = None
@@ -243,9 +221,10 @@ def main():
             ],
             env={
                 **os.environ,
-                "FLASK_APP": "regex_accountant.server:app",
+                "FLASK_APP": "regex_accountant.server:flask_app",
+                "REGEX_ACCOUNTANT_DEBUG": "1" if args.debug else "",
             },
         )
-        sys.exit(res)
+        sys.exit(res.returncode)
 
     sys.exit(0)
