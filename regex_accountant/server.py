@@ -1,5 +1,6 @@
 import logging
 import os
+from pathlib import Path
 
 import flask
 
@@ -9,14 +10,20 @@ import regex_accountant.persist as persist
 
 class Server:
     def __init__(self):
-        self.app = flask.Flask(__name__)
         self.load_transactions()
-        self.setup_routes()
+        self.app = self._get_app()
 
-    def setup_routes(self):
-        @self.app.route("/")
+    def _get_app(self):
+        here = Path(__file__).resolve().parent
+        app = flask.Flask(
+            __name__, template_folder=here / "server_assets" / "templates"
+        )
+
+        @app.route("/")
         def _route_app():
-            return "Hello world"
+            return flask.render_template("app.html")
+
+        return app
 
     def load_transactions(self):
         cfg = persist.read_config()
