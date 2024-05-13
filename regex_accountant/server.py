@@ -4,8 +4,10 @@ from pathlib import Path
 
 import flask
 
+from regex_accountant.fetcher_api import AccountTransaction, Transaction
 import regex_accountant.log as log
 import regex_accountant.persist as persist
+import regex_accountant.utils as utils
 
 
 class Server:
@@ -31,7 +33,9 @@ class Server:
         for account in cfg["accounts"]:
             ts = persist.read_txns(account)
             if ts:
-                txns.extend(ts["txns"])
+                txns.extend(
+                    AccountTransaction(**txn, account=account) for txn in ts["txns"]
+                )
         self.txns = txns
         logging.info(
             f"Loaded {len(txns)} transactions from {len(cfg['accounts'])} accounts"

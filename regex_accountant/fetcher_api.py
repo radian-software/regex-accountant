@@ -131,6 +131,11 @@ class Transaction:
     account_id: str = ""
 
 
+@dataclass
+class AccountTransaction(Transaction):
+    account: str = ""
+
+
 class Fetcher(abc.ABC):
     @abc.abstractmethod
     def authenticate(self, ctx: Context) -> Session:

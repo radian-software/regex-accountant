@@ -6,12 +6,23 @@
   </head>
   <body>
     <h1>Transactions</h1>
-    <ul>
-      {% for txn in txns %}
-      <li>
-        <p>{{ txn.description }}</p>
-      </li>
-      {% endfor %}
-    </ul>
+    <table>
+      <thead>
+        <th>
+          <td>Amount</td>
+          <td>Account</td>
+          <td>Description</td>
+        </th>
+      </thead>
+      <tbody>
+        {% for txn in txns %}
+        <tr>
+          <td>{{ txn.amount }} </td>
+          <td>{{ txn.account }}</td>
+          <td>{{ txn.description }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
   </body>
 </html>
