@@ -14,6 +14,8 @@ import typing
 from selenium import webdriver
 from selenium.webdriver.remote.webdriver import WebDriver
 
+from regex_accountant.utils import normalize_date
+
 
 @dataclass
 class Config(abc.ABC):
@@ -129,6 +131,10 @@ class Transaction:
     payment_method_short: str = ""
     payment_method_long: str = ""
     account_id: str = ""
+
+    def __post__init__(self):
+        self.date_posted = normalize_date(self.date_posted)
+        self.date_cleared = normalize_date(self.date_cleared)
 
 
 @dataclass

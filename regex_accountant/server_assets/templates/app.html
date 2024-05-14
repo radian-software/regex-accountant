@@ -9,6 +9,7 @@
     <table>
       <thead>
         <th>
+          <td>Date</td>
           <td>Amount</td>
           <td>Account</td>
           <td>Description</td>
@@ -17,7 +18,8 @@
       <tbody>
         {% for txn in txns %}
         <tr>
-          <td>{{ txn.amount }} </td>
+          <td>{{ txn.date_posted.strftime('%Y-%m-%d') }}</td>
+          <td>{{ txn.amount }} {{ txn.currency }}</td>
           <td>{{ txn.account }}</td>
           <td>{{ txn.description }}</td>
         </tr>

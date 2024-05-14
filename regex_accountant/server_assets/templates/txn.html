@@ -1,0 +1,56 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>regex_accountant</title>
+  </head>
+  <body>
+    <h1>Transaction</h1>
+    <table>
+      <tbody>
+        <tr>
+          <td>Transaction ID</td>
+          <td>{{ txn.source_uid }}</td>
+        </tr>
+        <tr>
+          <td>Date posted/cleared</td>
+          <td>
+            {{ txn.date_posted }} {% if txn.date_posted != txn.date_cleared %}
+            => {{ txn.date_cleared }} {% endif %}
+          </td>
+        </tr>
+        <tr>
+          <td>Amount</td>
+          <td>{{ txn.amount }} {{ txn.currency }}</td>
+        </tr>
+        <tr>
+          <td>Description</td>
+          <td>
+            {{ txn.description_details or txn.description or
+            txn.description_short }}
+          </td>
+        </tr>
+        {% if txn.client or txn.client_short %}
+        <tr>
+          <td>Client</td>
+          <td>{{ txn.client or txn.client_short }}</td>
+        </tr>
+        {% endif %} {% if txn.payment_method or txn.payment_method_short or
+        txn.payment_method_long %}
+        <tr>
+          <td>Payment method</td>
+          <td>
+            {{ txn.payment_method_long or txn.payment_method or
+            txn.payment_method_short }}
+          </td>
+        </tr>
+        {% endif %} {% if txn.account_id %}
+        <tr>
+          <td>Account</td>
+          <td>{{ txn.account_id }}</td>
+        </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </body>
+</html>

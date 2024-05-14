@@ -2,6 +2,7 @@ import logging
 import os
 from pathlib import Path
 
+import dataclass_wizard as dw
 import flask
 
 from regex_accountant.fetcher_api import AccountTransaction, Transaction
@@ -25,6 +26,12 @@ class Server:
         def _route_app():
             return flask.render_template("app.html", txns=self.txns)
 
+        @app.route("/txn/<account_id>/<txn_id>")
+        def _route_txn(account_id: str, txn_id: str):
+            if not (txn := self.txns_by_id[account_id, txn_id]):
+                return flask.abort(404)
+            return flask.render_template("txn.html", txn=txn)
+
         return app
 
     def load_transactions(self):
@@ -34,9 +41,16 @@ class Server:
             ts = persist.read_txns(account)
             if ts:
                 txns.extend(
-                    AccountTransaction(**txn, account=account) for txn in ts["txns"]
+                    dw.fromdict(AccountTransaction, {**txn, "account": account})
+                    for txn in ts["txns"]
                 )
         self.txns = txns
+        self.txns.sort(key=lambda txn: txn.date_posted)
+        self.txns_by_id = {}
+        for txn in self.txns:
+            if isinstance(txn.date_posted, str):
+                raise RuntimeError(f"{txn.account}, {txn.source_uid}")
+            self.txns_by_id[txn.account, txn.source_uid] = txn
         logging.info(
             f"Loaded {len(txns)} transactions from {len(cfg['accounts'])} accounts"
         )

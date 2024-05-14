@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import TypeVar
 
 import dataclass_wizard as dw
@@ -31,3 +31,11 @@ def asdict(obj, prune=False) -> dict:
 
 def asdate(dt: datetime) -> str:
     return dt.strftime("%Y-%m-%d")
+
+
+def normalize_date(dt: datetime) -> datetime:
+    if dt.tzinfo is not None and dt.tzinfo.utcoffset(dt) is not None:
+        return dt
+    if dt.hour == 0 and dt.minute == 0 and dt.second == 0 and dt.microsecond == 0:
+        dt = dt.replace(hour=12)
+    return dt.astimezone()
