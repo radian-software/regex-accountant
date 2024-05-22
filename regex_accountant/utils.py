@@ -1,10 +1,44 @@
 from datetime import datetime, timedelta
 from typing import TypeVar
 
-import dataclass_wizard as dw
-
+import mashumaro.codecs.basic as basic_codec
+from mashumaro.dialect import Dialect
+from mashumaro.types import SerializationStrategy
 
 T = TypeVar("T")
+
+
+class DateTimeSerializationStrategy(SerializationStrategy):
+    def serialize(self, value: datetime) -> str:
+        return ""
+
+    def deserialize(self, value: str) -> datetime:
+        return datetime.now()
+
+
+class CustomDialect(Dialect):
+    def __init__(self, prune: bool = False):
+        if prune:
+            self.omit_default = True
+        self.serialization_strategy = {
+            datetime: DateTimeSerializationStrategy(),
+        }
+
+
+def obj_to_dict(obj, prune=False, _encoder_cache={}):
+    if not (encoder := _encoder_cache.get((obj.__class__, prune))):
+        encoder = basic_codec.BasicEncoder(
+            obj.__class__, default_dialect=CustomDialect(prune)  # type: ignore
+        )
+        _encoder_cache[obj.__class__, prune] = encoder
+    return encoder.encode(obj)
+
+
+def dict_to_obj(cls, d, _decoder_cache={}):
+    if not (decoder := _decoder_cache.get(cls)):
+        decoder = basic_codec.BasicDecoder(cls, default_dialect=CustomDialect())  # type: ignore
+        _decoder_cache[cls] = decoder
+    return decoder.decode(d)
 
 
 def prune_empty(obj: T) -> T:
@@ -18,15 +52,6 @@ def prune_empty(obj: T) -> T:
     if isinstance(obj, list):
         return [prune_empty(elt) for elt in obj]  # type: ignore
     return obj
-
-
-# https://github.com/rnag/dataclass-wizard/issues/92
-def asdict(obj, prune=False) -> dict:
-    dw.DumpMeta(key_transform="SNAKE").bind_to(obj.__class__)
-    d = dw.asdict(obj)
-    if prune:
-        d = prune_empty(d)
-    return d
 
 
 def asdate(dt: datetime) -> str:

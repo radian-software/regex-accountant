@@ -132,9 +132,9 @@ class Transaction:
     payment_method_long: str = ""
     account_id: str = ""
 
-    def __post__init__(self):
-        self.date_posted = normalize_date(self.date_posted)
-        self.date_cleared = normalize_date(self.date_cleared)
+    @property
+    def sort_date(self):
+        return normalize_date(self.date_posted)
 
 
 @dataclass

@@ -10,9 +10,6 @@ import sys
 import traceback
 from typing import cast, Type
 
-import dataclass_wizard as dw
-from dataclass_wizard.loaders import JSONObject
-
 import regex_accountant.fetcher_api as api
 import regex_accountant.log as log
 import regex_accountant.model as model
@@ -101,15 +98,14 @@ def main():
                         )
                 account_config_raw[key] = val
 
-        account_config = dw.fromdict(Config, account_config_raw)
+        account_config = utils.dict_to_obj(Config, account_config_raw)
 
         if args.force_new_session:
             account_session = None
         else:
             try:
-                account_session = dw.fromdict(
-                    Session,
-                    cast(JSONObject, all_sessions.get(args.account)),
+                account_session = utils.dict_to_obj(
+                    Session, all_sessions.get(args.account)
                 )
             except Exception:
                 account_session = None
@@ -141,7 +137,7 @@ def main():
                 else:
                     logging.info("Auth failed, re-authenticating")
                 new_session = fetcher.authenticate(ctx)
-                all_sessions[args.account] = utils.asdict(new_session)
+                all_sessions[args.account] = utils.obj_to_dict(new_session)
                 persist.write_sessions(all_sessions)
                 ctx.session = new_session
 
@@ -176,7 +172,7 @@ def main():
                 logging.info(f"Got {len(txns)} transactions")
                 tag = persist.write_to_staging_area(
                     f"txns_{args.account}",
-                    utils.asdict(
+                    utils.obj_to_dict(
                         model.StagedTransactions(
                             account=args.account,
                             start_date=start_date,
@@ -195,16 +191,16 @@ def main():
 
         staged_data = persist.read_from_staging_area(args.tag)
         staged_data["txns"] = staged_data.get("txns") or []
-        staged = dw.fromdict(
+        staged = utils.dict_to_obj(
             model.StagedTransactions,
             staged_data,
         )
         store = model.TransactionStore()
         if ts := persist.read_txns(staged.account):
-            store.accts[staged.account] = dw.fromdict(model.TransactionSet, ts)
+            store.accts[staged.account] = utils.dict_to_obj(model.TransactionSet, ts)
         store.import_transactions(staged)
         persist.write_txns(
-            staged.account, utils.asdict(store.accts[staged.account], prune=True)
+            staged.account, utils.obj_to_dict(store.accts[staged.account], prune=True)
         )
 
     if args.cmd == "ui":

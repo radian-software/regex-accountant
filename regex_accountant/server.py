@@ -2,7 +2,6 @@ import logging
 import os
 from pathlib import Path
 
-import dataclass_wizard as dw
 import flask
 
 from regex_accountant.fetcher_api import AccountTransaction, Transaction
@@ -41,11 +40,11 @@ class Server:
             ts = persist.read_txns(account)
             if ts:
                 txns.extend(
-                    dw.fromdict(AccountTransaction, {**txn, "account": account})
+                    utils.dict_to_obj(AccountTransaction, {**txn, "account": account})
                     for txn in ts["txns"]
                 )
         self.txns = txns
-        self.txns.sort(key=lambda txn: txn.date_posted)
+        self.txns.sort(key=lambda txn: txn.sort_date)
         self.txns_by_id = {}
         for txn in self.txns:
             if isinstance(txn.date_posted, str):
