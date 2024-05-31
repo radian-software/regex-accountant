@@ -137,11 +137,6 @@ class Transaction:
         return normalize_date(self.date_posted)
 
 
-@dataclass
-class AccountTransaction(Transaction):
-    account: str = ""
-
-
 class Fetcher(abc.ABC):
     @abc.abstractmethod
     def authenticate(self, ctx: Context) -> Session:

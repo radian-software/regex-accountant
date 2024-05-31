@@ -10,10 +10,10 @@ T = TypeVar("T")
 
 class DateTimeSerializationStrategy(SerializationStrategy):
     def serialize(self, value: datetime) -> str:
-        return ""
+        return value.isoformat()
 
     def deserialize(self, value: str) -> datetime:
-        return datetime.now()
+        return datetime.fromisoformat(value.removesuffix("Z"))
 
 
 class CustomDialect(Dialect):

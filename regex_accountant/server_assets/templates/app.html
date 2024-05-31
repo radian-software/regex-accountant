@@ -21,7 +21,7 @@
           <td>{{ txn.date_posted.strftime('%Y-%m-%d') }}</td>
           <td>{{ txn.amount }} {{ txn.currency }}</td>
           <td>{{ txn.account }}</td>
-          <td>{{ txn.description }}</td>
+          <td>{{ txn.summary }}</td>
         </tr>
         {% endfor %}
       </tbody>

@@ -1,13 +1,30 @@
+from dataclasses import dataclass
 import logging
 import os
 from pathlib import Path
 
 import flask
 
-from regex_accountant.fetcher_api import AccountTransaction, Transaction
+from regex_accountant.fetcher_api import Transaction
 import regex_accountant.log as log
 import regex_accountant.persist as persist
 import regex_accountant.utils as utils
+
+
+@dataclass
+class ExtTransaction(Transaction):
+    account: str = ""
+
+    @property
+    def summary(self) -> str:
+        s = self.description or self.description_short or self.description_details
+        if part := (self.client or self.client_short):
+            s += f" to {part}"
+        if part := (
+            self.payment_method or self.payment_method_short or self.payment_method_long
+        ):
+            s += f" via {part}"
+        return s
 
 
 class Server:
@@ -40,7 +57,7 @@ class Server:
             ts = persist.read_txns(account)
             if ts:
                 txns.extend(
-                    utils.dict_to_obj(AccountTransaction, {**txn, "account": account})
+                    utils.dict_to_obj(ExtTransaction, {**txn, "account": account})
                     for txn in ts["txns"]
                 )
         self.txns = txns
