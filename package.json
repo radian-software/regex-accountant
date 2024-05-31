@@ -1,0 +1,15 @@
+{
+  "name": "regex-accountant",
+  "version": "0.0.1",
+  "description": "Frontend components of regex-accountant",
+  "author": "Radian LLC <contact+regex-accountant@radian.codes>",
+  "license": "MIT",
+  "private": true,
+  "dependencies": {
+    "caniuse-lite": "^1.0.30001625",
+    "tailwindcss": "^3.4.3"
+  },
+  "scripts": {
+    "css-watch": "tailwindcss -i ./regex_accountant/server_assets/input.css -o ./regex_accountant/server_assets/static/styles/accountant.css --watch"
+  }
+}

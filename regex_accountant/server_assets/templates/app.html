@@ -3,17 +3,18 @@
   <head>
     <meta charset="utf-8" />
     <title>regex_accountant</title>
+    <link rel="stylesheet" href="/styles/accountant.css" />
   </head>
   <body>
     <h1>Transactions</h1>
     <table>
       <thead>
-        <th>
-          <td>Date</td>
-          <td>Amount</td>
-          <td>Account</td>
-          <td>Description</td>
-        </th>
+        <tr>
+          <th>Date</th>
+          <th>Amount</th>
+          <th>Account</th>
+          <th>Description</th>
+        </tr>
       </thead>
       <tbody>
         {% for txn in txns %}

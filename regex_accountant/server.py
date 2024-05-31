@@ -19,7 +19,10 @@ class ExtTransaction(Transaction):
     def summary(self) -> str:
         s = self.description or self.description_short or self.description_details
         if part := (self.client or self.client_short):
-            s += f" to {part}"
+            if self.amount > 0:
+                s += f" from {part}"
+            else:
+                s += f" to {part}"
         if part := (
             self.payment_method or self.payment_method_short or self.payment_method_long
         ):
@@ -41,6 +44,12 @@ class Server:
         @app.route("/")
         def _route_app():
             return flask.render_template("app.html", txns=self.txns)
+
+        @app.route("/styles/<path>")
+        def _route_styles(path: str):
+            return flask.send_from_directory(
+                here / "server_assets" / "static" / "styles", path
+            )
 
         @app.route("/txn/<account_id>/<txn_id>")
         def _route_txn(account_id: str, txn_id: str):
