@@ -7,25 +7,29 @@
   </head>
   <body class="mx-10 my-5">
     <h1 class="text-2xl">Transactions</h1>
-    <table class="my-5">
-      <thead class="bg-gray-50">
-        <tr>
-          <th>Date</th>
-          <th>Amount</th>
-          <th>Account</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
+    <div class="table my-5 border border-gray-300 border-collapse">
+      <div class="table-header-group bg-gray-300">
+        <div class="table-row">
+          <div class="table-cell p-1">Date</div>
+          <div class="table-cell p-1">Amount</div>
+          <div class="table-cell p-1">Account</div>
+          <div class="table-cell p-1">Description</div>
+        </div>
+      </div>
+      <div class="table-row-group">
         {% for txn in txns %}
-        <tr class="border-b">
-          <td>{{ txn.date_posted.strftime('%Y-%m-%d') }}</td>
-          <td>{{ txn.amount }} {{ txn.currency }}</td>
-          <td>{{ txn.account }}</td>
-          <td>{{ txn.summary }}</td>
-        </tr>
+        <div class="table-row border border-gray-300">
+          <div class="table-cell px-2 py-1">
+            {{ txn.date_posted.strftime('%Y-%m-%d') }}
+          </div>
+          <div class="table-cell px-2 py-1 text-right">
+            {{ txn.amount.__str__().replace('-', '−') }} {{ txn.currency }}
+          </div>
+          <div class="table-cell px-2 py-1">{{ txn.account }}</div>
+          <div class="table-cell px-2 py-1">{{ txn.summary }}</div>
+        </div>
         {% endfor %}
-      </tbody>
-    </table>
+      </div>
+    </div>
   </body>
 </html>
