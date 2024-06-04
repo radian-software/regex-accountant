@@ -18,7 +18,10 @@
       </div>
       <div class="table-row-group">
         {% for txn in txns %}
-        <div class="table-row border border-gray-300">
+        <a
+          href="/txn/{{ txn.account }}/{{ txn.source_uid }}"
+          class="table-row border border-gray-300"
+        >
           <div class="table-cell px-2 py-1">
             {{ txn.date_posted.strftime('%Y-%m-%d') }}
           </div>
@@ -27,7 +30,7 @@
           </div>
           <div class="table-cell px-2 py-1">{{ txn.account }}</div>
           <div class="table-cell px-2 py-1">{{ txn.summary }}</div>
-        </div>
+        </a>
         {% endfor %}
       </div>
     </div>

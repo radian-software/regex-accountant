@@ -5,53 +5,56 @@
     <title>regex_accountant</title>
     <link rel="stylesheet" href="/styles/accountant.css" />
   </head>
-  <body>
-    <h1>Transaction</h1>
-    <table>
-      <tbody>
-        <tr>
-          <td>Transaction ID</td>
-          <td>{{ txn.source_uid }}</td>
-        </tr>
-        <tr>
-          <td>Date posted/cleared</td>
-          <td>
-            {{ txn.date_posted }} {% if txn.date_posted != txn.date_cleared %}
-            => {{ txn.date_cleared }} {% endif %}
-          </td>
-        </tr>
-        <tr>
-          <td>Amount</td>
-          <td>{{ txn.amount }} {{ txn.currency }}</td>
-        </tr>
-        <tr>
-          <td>Description</td>
-          <td>
-            {{ txn.description_details or txn.description or
-            txn.description_short }}
-          </td>
-        </tr>
-        {% if txn.client or txn.client_short %}
-        <tr>
-          <td>Client</td>
-          <td>{{ txn.client or txn.client_short }}</td>
-        </tr>
-        {% endif %} {% if txn.payment_method or txn.payment_method_short or
-        txn.payment_method_long %}
-        <tr>
-          <td>Payment method</td>
-          <td>
-            {{ txn.payment_method_long or txn.payment_method or
-            txn.payment_method_short }}
-          </td>
-        </tr>
-        {% endif %} {% if txn.account_id %}
-        <tr>
-          <td>Account</td>
-          <td>{{ txn.account_id }}</td>
-        </tr>
-        {% endif %}
-      </tbody>
-    </table>
+  <body class="mx-10 my-5">
+    <h1 class="text-2xl">Transaction</h1>
+    <div class="table my-5 border border-gray-300 border-collapse">
+      <div class="table-row-group">
+        <div class="table-cell px-2 py-1 bg-gray-300">Transaction ID</div>
+        <div class="table-cell px-2 py-1">{{ txn.source_uid }}</div>
+      </div>
+      <div class="table-row-group">
+        <div class="table-cell px-2 py-1 bg-gray-300">Date posted/cleared</div>
+        <div class="table-cell px-2 py-1">
+          {{ txn.date_posted }} {% if txn.date_posted != txn.date_cleared %} =>
+          {{ txn.date_cleared }} {% endif %}
+        </div>
+      </div>
+      <div class="table-row-group">
+        <div class="table-cell px-2 py-1 bg-gray-300">Amount</div>
+        <div class="table-cell px-2 py-1">
+          {{ txn.amount }} {{ txn.currency }}
+        </div>
+      </div>
+      <div class="table-row-group">
+        <div class="table-cell px-2 py-1 bg-gray-300">Description</div>
+        <div class="table-cell px-2 py-1">
+          {{ txn.description_details or txn.description or txn.description_short
+          }}
+        </div>
+      </div>
+      {% if txn.client or txn.client_short %}
+      <div class="table-row-group">
+        <div class="table-cell px-2 py-1 bg-gray-300">Client</div>
+        <div class="table-cell px-2 py-1">
+          {{ txn.client or txn.client_short }}
+        </div>
+      </div>
+      {% endif %} {% if txn.payment_method or txn.payment_method_short or
+      txn.payment_method_long %}
+      <div class="table-row-group">
+        <div class="table-cell px-2 py-1 bg-gray-300">Payment method</div>
+        <div class="table-cell px-2 py-1">
+          {{ txn.payment_method_long or txn.payment_method or
+          txn.payment_method_short }}
+        </div>
+      </div>
+      {% endif %} {% if txn.account_id %}
+      <div class="table-row-group">
+        <div class="table-cell px-2 py-1 bg-gray-300">Account</div>
+        <div class="table-cell px-2 py-1">{{ txn.account_id }}</div>
+      </div>
+      {% endif %}
+    </div>
+    <a href="/">Back</a>
   </body>
 </html>
