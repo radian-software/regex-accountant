@@ -7,6 +7,22 @@
   </head>
   <body class="mx-10 my-5">
     <h1 class="text-2xl">Transactions</h1>
+    <form class="mt-2 flex">
+      <input
+        type="submit"
+        value="Query"
+        class="border border-gray-300 p-1 px-3 mr-5"
+      />
+      <input
+        type="text"
+        name="q"
+        class="border border-gray-300 font-mono p-2 w-full"
+        rows="1"
+        placeholder="Query transactions"
+        value="{{ query }}"
+        autofocus
+      />
+    </form>
     <div class="table my-5 border border-gray-300 border-collapse">
       <div class="table-header-group bg-gray-300">
         <div class="table-row">

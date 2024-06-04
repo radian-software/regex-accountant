@@ -43,7 +43,11 @@ class Server:
 
         @app.route("/")
         def _route_app():
-            return flask.render_template("app.html", txns=reversed(self.txns))
+            return flask.render_template(
+                "app.html",
+                txns=reversed(self.txns),
+                query=flask.request.args.get("q", ""),
+            )
 
         @app.route("/styles/<path>")
         def _route_styles(path: str):
