@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import json
 import logging
 import os
 from pathlib import Path
@@ -59,7 +60,11 @@ class Server:
         def _route_txn(account_id: str, txn_id: str):
             if not (txn := self.txns_by_id[account_id, txn_id]):
                 return flask.abort(404)
-            return flask.render_template("txn.html", txn=txn)
+            return flask.render_template(
+                "txn.html",
+                txn=txn,
+                txn_json=json.dumps(utils.obj_to_dict(txn, prune=True), indent=2),
+            )
 
         return app
 

@@ -12,6 +12,7 @@ import traceback
 import typing
 
 from selenium import webdriver
+from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
 
 from regex_accountant.utils import normalize_date

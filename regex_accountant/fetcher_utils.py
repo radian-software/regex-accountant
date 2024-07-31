@@ -88,7 +88,11 @@ UNICODE_MINUS = "\u2212"
 
 
 CURRENCY_SYMBOLS = {
+    # Important: these are processed in order, put the more specific
+    # ones first, so for example CA$ has to come before $ or else the
+    # former will not match.
     "CA$": "CAD",
+    "A$": "AUD",
     "$": "USD",
     "€": "EUR",
     "£": "GBP",
