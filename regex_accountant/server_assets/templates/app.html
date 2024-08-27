@@ -21,6 +21,7 @@
         placeholder="Query transactions"
         value="{{ query }}"
         autofocus
+        onfocus="this.oldValue = this.value; this.value = ''; this.value = this.oldValue;"
       />
     </form>
     <div class="table my-5 border border-gray-300 border-collapse">
