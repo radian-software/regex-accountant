@@ -1,0 +1,23 @@
+%import common.CNAME
+%import common.ESCAPED_STRING
+%import common.SIGNED_NUMBER
+%import common.WS
+
+%ignore WS
+
+?start: pipeline
+
+pipeline: operation ("|" operation)*
+operation: ["filter"] filter | "set" setter+ | "sort" expr ("," expr)* ("desc" | "asc") | "join" filter
+filter: filter_conj ("or" filter_conj)*
+filter_conj: filter_atom (["and"] filter_atom)*
+filter_atom: ("not" | "-") filter_atom | "(" filter ")" | expr [comparator (loose_string | expr)]
+comparator: ["!"] ("=" | "==" | ":" | "::" | "<" | ">" | "<=" | ">=" | "~")
+expr: expr_mul (("+" | "-") expr_mul)*
+expr_mul: expr_atom (("*" | "/") expr_atom)*
+expr_atom: "-" expr_atom | "(" expr ")" | funcname "(" expr ("," expr)* ")" | value
+value: SIGNED_NUMBER | ESCAPED_STRING | propname
+loose_string: ESCAPED_STRING | CNAME
+funcname: CNAME
+propname: CNAME ("." CNAME)*
+setter: propname "=" (loose_string | expr)

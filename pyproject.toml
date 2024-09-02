@@ -19,6 +19,7 @@ curlinate = {path = "../curlinate", develop = true}
 flask = "^2.3.2"
 pytz = "^2024.1"
 mashumaro = "^3.13"
+lark = "^1.2.2"
 
 [tool.poetry.scripts]
 rac = "regex_accountant.cli:main"
