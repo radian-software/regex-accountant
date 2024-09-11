@@ -8,16 +8,26 @@
 ?start: pipeline
 
 pipeline: operation ("|" operation)*
-operation: ["filter"] filter | "set" setter+ | "sort" expr ("," expr)* ("desc" | "asc") | "join" filter
-filter: filter_conj ("or" filter_conj)*
-filter_conj: filter_atom (["and"] filter_atom)*
-filter_atom: ("not" | "-") filter_atom | "(" filter ")" | expr [comparator (loose_string | expr)]
-comparator: ["!"] ("=" | "==" | ":" | "::" | "<" | ">" | "<=" | ">=" | "~")
-expr: expr_mul (("+" | "-") expr_mul)*
-expr_mul: expr_atom (("*" | "/") expr_atom)*
-expr_atom: "-" expr_atom | "(" expr ")" | funcname "(" expr ("," expr)* ")" | value
-value: SIGNED_NUMBER | ESCAPED_STRING | propname
-loose_string: ESCAPED_STRING | CNAME
-funcname: CNAME
+operation: ["filter"] filter -> op_filter
+    | "set" setter+ -> op_set
+    | "sort" expr ("," expr)* ("desc" | "asc") -> op_sort
+    | "join" filter -> op_filter
+
+?filter: filter_conj ("or" filter_conj)*
+?filter_conj: filter_atom (["and"] filter_atom)*
+?filter_atom: ("not" | "-") filter_atom -> filt_not
+    | "(" filter ")"
+    | expr [COMPARATOR (loose_string | expr)] -> filt_comp
+
+COMPARATOR: /!?(==?|::?|<=?|>=?|~)/
+?expr: expr_mul (/[+-]/ expr_mul)*
+?expr_mul: expr_atom (("*" | "/") expr_atom)*
+?expr_atom: "-" expr_atom -> expr_not
+    | "(" expr ")"
+    | funcname "(" expr ("," expr)* ")" -> expr_func
+    | value
+?value: SIGNED_NUMBER -> signum | ESCAPED_STRING -> escstr | propname
+loose_string: ESCAPED_STRING -> escstr | CNAME -> rawstr
+funcname: CNAME -> rawstr
 propname: CNAME ("." CNAME)*
 setter: propname "=" (loose_string | expr)
