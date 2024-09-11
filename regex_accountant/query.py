@@ -1,5 +1,6 @@
 from abc import ABC
 from dataclasses import dataclass
+from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
 
@@ -10,7 +11,7 @@ THIS_DIR = Path(__file__).resolve().parent
 
 
 with open(THIS_DIR / "query.lark") as f:
-    parser = lark.Lark(f)
+    parser = lark.Lark(f, ambiguity="resolve")
 
 
 @dataclass
@@ -144,6 +145,12 @@ class Transformer(lark.Transformer):
 
     rawstr = lambda self, tok: tok[0].value
     propname = lambda self, tok: Identifier(tok[0].value)
+
+    def date(self, args):
+        s = args[0]
+        if len(s.split("-")) == 2:
+            return datetime.strptime(s, "%Y-%m").date()
+        return datetime.strptime(s, "%Y-%m-%d").date()
 
 
 class Query:
