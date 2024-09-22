@@ -1,10 +1,10 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from pathlib import Path
 import re
-from typing import Any
+from typing import Any, Tuple
 
 import lark
 
@@ -44,62 +44,74 @@ class Comparator(ABC):
     def matches(self, txn: Txn, lhs: Expr, rhs: Expr) -> bool:
         raise NotImplementedError
 
+    @staticmethod
+    def preprocess(lhs: Any, rhs: Any, *ops: str) -> Tuple[Any, Any]:
+        if "casefold" in ops:
+            if isinstance(lhs, str) and isinstance(rhs, str):
+                lhs = lhs.casefold()
+                rhs = rhs.casefold()
+        if "normdate" in ops:
+            if isinstance(lhs, date) and isinstance(rhs, datetime):
+                rhs = rhs.date()
+            if isinstance(lhs, datetime) and isinstance(rhs, date):
+                lhs = lhs.date()
+        return lhs, rhs
+
 
 class Equals(Comparator):
     def matches(self, txn: Txn, lhs: Expr, rhs: Expr) -> bool:
-        return lhs.evaluate(txn) == rhs.evaluate(txn)
+        l, r = Comparator.preprocess(lhs.evaluate(txn), rhs.evaluate(txn), "normdate")
+        return l == r
 
 
 class EqualsIgnoringCase(Comparator):
     def matches(self, txn: Txn, lhs: Expr, rhs: Expr) -> bool:
-        lhs_val = lhs.evaluate(txn)
-        rhs_val = rhs.evaluate(txn)
-        if isinstance(lhs_val, str):
-            lhs_val = lhs_val.casefold()
-        if isinstance(rhs_val, str):
-            rhs_val = rhs_val.casefold()
-        return lhs_val == rhs_val
+        l, r = Comparator.preprocess(
+            lhs.evaluate(txn), rhs.evaluate(txn), "casefold", "normdate"
+        )
+        return l == r
 
 
 class Contains(Comparator):
     def matches(self, txn: Txn, lhs: Expr, rhs: Expr) -> bool:
-        return rhs.evaluate(txn) in lhs.evaluate(txn)
+        l, r = Comparator.preprocess(lhs.evaluate(txn), rhs.evaluate(txn))
+        return r in l
 
 
 class ContainsIgnoringCase(Comparator):
     def matches(self, txn: Txn, lhs: Expr, rhs: Expr) -> bool:
-        lhs_val = lhs.evaluate(txn)
-        rhs_val = rhs.evaluate(txn)
-        if isinstance(lhs_val, str):
-            lhs_val = lhs_val.casefold()
-        if isinstance(rhs_val, str):
-            rhs_val = rhs_val.casefold()
-        return rhs_val in lhs_val
+        l, r = Comparator.preprocess(lhs.evaluate(txn), rhs.evaluate(txn), "casefold")
+        return r in l
 
 
 class LessThan(Comparator):
     def matches(self, txn: Txn, lhs: Expr, rhs: Expr) -> bool:
-        return lhs.evaluate(txn) < rhs.evaluate(txn)
+        l, r = Comparator.preprocess(lhs.evaluate(txn), rhs.evaluate(txn), "normdate")
+        return l < r
 
 
 class LessThanOrEqual(Comparator):
     def matches(self, txn: Txn, lhs: Expr, rhs: Expr) -> bool:
-        return lhs.evaluate(txn) <= rhs.evaluate(txn)
+        l, r = Comparator.preprocess(lhs.evaluate(txn), rhs.evaluate(txn), "normdate")
+        return l <= r
 
 
 class GreaterThan(Comparator):
     def matches(self, txn: Txn, lhs: Expr, rhs: Expr) -> bool:
-        return lhs.evaluate(txn) > rhs.evaluate(txn)
+        l, r = Comparator.preprocess(lhs.evaluate(txn), rhs.evaluate(txn), "normdate")
+        return l > r
 
 
 class GreaterThanOrEqual(Comparator):
     def matches(self, txn: Txn, lhs: Expr, rhs: Expr) -> bool:
-        return lhs.evaluate(txn) >= rhs.evaluate(txn)
+        l, r = Comparator.preprocess(lhs.evaluate(txn), rhs.evaluate(txn), "normdate")
+        return l >= r
 
 
 class MatchesRegex(Comparator):
     def matches(self, txn: Txn, lhs: Expr, rhs: Expr) -> bool:
-        return re.fullmatch(rhs.evaluate(txn), lhs.evaluate(txn))
+        l, r = Comparator.preprocess(lhs.evaluate(txn), rhs.evaluate(txn))
+        return re.fullmatch(r, l)
 
 
 comparator_table = {
@@ -171,6 +183,8 @@ class Identifier(Expr):
             return txn.payment_method_long or txn.payment_method
         if self.value in {"account_id", "account", "acct_id", "acct"}:
             return txn.account_id
+        if self.value in {"source", "src", "fetcher"}:
+            return txn.account
         if self.default_to_string:
             return self.value
         raise RuntimeError(f"no such txn property {repr(self.value)}")
@@ -288,17 +302,13 @@ class Transformer(lark.Transformer):
     op_filter = lambda self, args: Filter(args[0])
 
     def filter(self, conjs):
-        if len(conjs) == 1:
-            return conjs[0]
         return FilterOr(conjs)
 
     def filter_conj(self, atoms):
-        if len(atoms) == 1:
-            return atoms[0]
         return FilterAnd(atoms)
 
     def filt_comp(self, args):
-        if len(args) == 1:
+        if args[1] is None:
             return args[0]
         lhs, comp, rhs = args
         return Comparison(lhs, comparator_table[comp.value], rhs)
@@ -326,8 +336,8 @@ class Transformer(lark.Transformer):
     def date(self, args):
         s = args[0]
         if len(s.split("-")) == 2:
-            return datetime.strptime(s, "%Y-%m").date()
-        return datetime.strptime(s, "%Y-%m-%d").date()
+            return Value(datetime.strptime(s, "%Y-%m").date())
+        return Value(datetime.strptime(s, "%Y-%m-%d").date())
 
 
 class Query:
