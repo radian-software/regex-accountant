@@ -9,26 +9,9 @@ import flask
 from regex_accountant.fetcher_api import Transaction
 import regex_accountant.log as log
 import regex_accountant.persist as persist
+from regex_accountant.postprocess import ExtTransaction as Txn
+from regex_accountant.query import Query
 import regex_accountant.utils as utils
-
-
-@dataclass
-class ExtTransaction(Transaction):
-    account: str = ""
-
-    @property
-    def summary(self) -> str:
-        s = self.description or self.description_short or self.description_details
-        if part := (self.client or self.client_short):
-            if self.amount > 0:
-                s += f" to {part}"
-            else:
-                s += f" from {part}"
-        if part := (
-            self.payment_method or self.payment_method_short or self.payment_method_long
-        ):
-            s += f" via {part}"
-        return s
 
 
 class Server:
@@ -44,10 +27,13 @@ class Server:
 
         @app.route("/")
         def _route_app():
+            txns = list(reversed(self.txns))
+            if query := flask.request.args.get("q", "").strip():
+                txns = Query(query).apply(txns)
             return flask.render_template(
                 "app.html",
-                txns=reversed(self.txns),
-                query=flask.request.args.get("q", ""),
+                txns=txns,
+                query=query,
             )
 
         @app.route("/styles/<path>")
@@ -75,7 +61,7 @@ class Server:
             ts = persist.read_txns(account)
             if ts:
                 txns.extend(
-                    utils.dict_to_obj(ExtTransaction, {**txn, "account": account})
+                    utils.dict_to_obj(Txn, {**txn, "account": account})
                     for txn in ts["txns"]
                 )
         self.txns = txns
