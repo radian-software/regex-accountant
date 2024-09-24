@@ -49,11 +49,11 @@ class QueryDate:
         return True
 
     def __le__(self, o: QueryDate | datetime | date) -> bool:
-        if self.year < o.year:
+        if self.year > o.year:
             return False
-        if self.month and o.month and self.month < o.month:
+        if self.month and o.month and self.month > o.month:
             return False
-        if self.day and o.day and self.day < o.day:
+        if self.day and o.day and self.day > o.day:
             return False
         return True
 

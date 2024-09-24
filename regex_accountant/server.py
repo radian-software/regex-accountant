@@ -3,8 +3,10 @@ import json
 import logging
 import os
 from pathlib import Path
+import re
 
 import flask
+from markupsafe import Markup
 
 from regex_accountant.fetcher_api import Transaction
 import regex_accountant.log as log
@@ -18,6 +20,20 @@ class Server:
     def __init__(self):
         self.load_transactions()
         self.app = self._get_app()
+
+    def redact(self, s: str) -> Markup:
+        parts = []
+        cur_idx = 0
+        for match in re.finditer(self.redaction_regex, s):
+            if match.start() > cur_idx:
+                parts.append(Markup.escape(s[cur_idx : match.start()]))
+                parts.append(
+                    f'<span class="redacted">{Markup.escape(match.group())}</span>'
+                )
+            cur_idx = match.end()
+        if cur_idx < len(s):
+            parts.append(Markup.escape(s[cur_idx:]))
+        return Markup("".join(parts))
 
     def _get_app(self):
         here = Path(__file__).resolve().parent
@@ -34,6 +50,7 @@ class Server:
                 "app.html",
                 txns=txns,
                 query=query,
+                redact=self.redact,
             )
 
         @app.route("/styles/<path>")
@@ -53,6 +70,10 @@ class Server:
             )
 
         return app
+
+    def _get_redaction_regex(self) -> re.Pattern:
+        patterns = self.rules.get("redaction", {}).get("patterns", [])
+        return re.compile("|".join(f"({pat})" for pat in patterns))
 
     def load_transactions(self):
         cfg = persist.read_config()
@@ -74,6 +95,8 @@ class Server:
         logging.info(
             f"Loaded {len(txns)} transactions from {len(cfg['accounts'])} accounts"
         )
+        self.rules = persist.read_rules()
+        self.redaction_regex = self._get_redaction_regex()
 
 
 log.setup_logger(debug=bool(os.environ.get("REGEX_ACCOUNTANT_DEBUG")))

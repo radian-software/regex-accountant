@@ -46,7 +46,7 @@
             {{ txn.amount.__str__().replace('-', '−') }} {{ txn.currency }}
           </div>
           <div class="table-cell px-2 py-1">{{ txn.account }}</div>
-          <div class="table-cell px-2 py-1">{{ txn.summary }}</div>
+          <div class="table-cell px-2 py-1">{{ redact(txn.summary) }}</div>
         </a>
         {% endfor %}
       </div>

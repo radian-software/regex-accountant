@@ -25,6 +25,14 @@ def read_sessions() -> dict:
         return {}
 
 
+def read_rules() -> dict:
+    try:
+        with open(xdg_config_home() / "regex-accountant" / "rules.json") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return {}
+
+
 def write_sessions(sessions: dict):
     d = xdg_data_home() / "regex-accountant"
     d.mkdir(parents=True, exist_ok=True)
