@@ -10,15 +10,16 @@
 pipeline: operation ("|" operation)*
 operation: "filter" filter -> op_filter
     | "set" setter+ -> op_set
-    | "sort" expr ("," expr)* /desc|asc/ -> op_sort
+    | "sort" expr ("," expr)* /desc|asc/? -> op_sort
     | "join" filter -> op_filter
     | filter -> op_filter
 
 ?filter: filter_conj ("or" filter_conj)*
 ?filter_conj: filter_atom (["and"] filter_atom)*
-?filter_atom: ("not" | "-") filter_atom -> filt_not
+?filter_atom: ("not" | "-") (filter_atom | expr) -> filt_not
     | "(" filter ")"
-    | expr [COMPARATOR (loose_string | expr)] -> filt_comp
+    | "+" expr
+    | expr COMPARATOR (loose_string | expr) -> filt_comp
 
 COMPARATOR: /!?(==?|::?|<=?|>=?|~)/
 ?expr: date | expr_mul (/[+-]/ expr_mul)*

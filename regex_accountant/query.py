@@ -356,7 +356,9 @@ class Pipeline:
 class Transformer(lark.Transformer):
     pipeline = Pipeline
     op_filter = lambda self, args: Filter(args[0])
-    op_sort = lambda self, args: Sort(args[0], args[1].value == "desc")
+    op_sort = lambda self, args: Sort(
+        args[0], args[1].value == "desc" if len(args) > 1 else False
+    )
 
     def filter(self, conjs):
         return FilterOr(conjs)
