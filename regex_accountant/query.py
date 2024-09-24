@@ -1,7 +1,10 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import Decimal
+from functools import total_ordering
 from pathlib import Path
 import re
 from typing import Any, Tuple
@@ -16,6 +19,43 @@ THIS_DIR = Path(__file__).resolve().parent
 
 with open(THIS_DIR / "query.lark") as f:
     parser = lark.Lark(f, ambiguity="resolve")
+
+
+@total_ordering
+@dataclass
+class QueryDate:
+    year: int
+    month: int | None = None  # 1-12
+    day: int | None = None  # 1-31
+
+    @staticmethod
+    def parse(s: str) -> QueryDate:
+        return QueryDate(*map(int, s.split("-")))
+
+    # Custom comparison methods. They work the way normal comparison
+    # methods do when comparing against another QueryDate object. But
+    # you can also compare against a datetime or date object and it
+    # will do a looser comparison, like QueryDate.parse("2012-02")
+    # will compare equal to date(year=2012, month=2, day=d) for any
+    # value d.
+
+    def __eq__(self, o: QueryDate | datetime | date) -> bool:
+        if self.year != o.year:
+            return False
+        if self.month not in {None, o.month}:
+            return False
+        if self.day not in {None, o.day}:
+            return False
+        return True
+
+    def __le__(self, o: QueryDate | datetime | date) -> bool:
+        if self.year < o.year:
+            return False
+        if self.month and o.month and self.month < o.month:
+            return False
+        if self.day and o.day and self.day < o.day:
+            return False
+        return True
 
 
 @dataclass
@@ -51,10 +91,10 @@ class Comparator(ABC):
                 lhs = lhs.casefold()
                 rhs = rhs.casefold()
         if "normdate" in ops:
-            if isinstance(lhs, date) and isinstance(rhs, datetime):
-                rhs = rhs.date()
-            if isinstance(lhs, datetime) and isinstance(rhs, date):
-                lhs = lhs.date()
+            if isinstance(lhs, datetime) and isinstance(rhs, Decimal):
+                rhs = QueryDate(int(rhs))
+            if isinstance(rhs, datetime) and isinstance(lhs, Decimal):
+                lhs = QueryDate(int(lhs))
         return lhs, rhs
 
 
@@ -334,10 +374,7 @@ class Transformer(lark.Transformer):
     propname = lambda self, tok: Identifier(tok[0].value)
 
     def date(self, args):
-        s = args[0]
-        if len(s.split("-")) == 2:
-            return Value(datetime.strptime(s, "%Y-%m").date())
-        return Value(datetime.strptime(s, "%Y-%m-%d").date())
+        return Value(QueryDate.parse(args[0]))
 
 
 class Query:
