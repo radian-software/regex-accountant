@@ -170,7 +170,9 @@ comparator_table = {
 @dataclass
 class Identifier(Expr):
     value: str
-    default_to_string: bool = False  # hack, remove
+
+    def evaluate_fallback(self) -> Any:
+        return None
 
     def evaluate(self, txn: Txn) -> Any:
         if self.value in {"date", "date_posted", "posted"}:
@@ -225,9 +227,14 @@ class Identifier(Expr):
             return txn.account_id
         if self.value in {"source", "src", "fetcher"}:
             return txn.account
-        if self.default_to_string:
-            return self.value
+        if res := self.evaluate_fallback():
+            return res
         raise RuntimeError(f"no such txn property {repr(self.value)}")
+
+
+class IdentifierOrString(Identifier):
+    def evaluate_fallback(self) -> Any:
+        return self.value
 
 
 @dataclass
@@ -328,6 +335,15 @@ class Filter(Operation):
 
 
 @dataclass
+class Sort(Operation):
+    expr: Expr
+    reverse: bool
+
+    def apply(self, txns: list[Txn]) -> list[Txn]:
+        return list(sorted(txns, key=self.expr.evaluate, reverse=self.reverse))
+
+
+@dataclass
 class Pipeline:
     ops: list[Operation]
 
@@ -340,6 +356,7 @@ class Pipeline:
 class Transformer(lark.Transformer):
     pipeline = Pipeline
     op_filter = lambda self, args: Filter(args[0])
+    op_sort = lambda self, args: Sort(args[0], args[1].value == "desc")
 
     def filter(self, conjs):
         return FilterOr(conjs)
@@ -367,11 +384,14 @@ class Transformer(lark.Transformer):
             return parts[0]
         return Plus(parts)
 
+    def expr_func(self, args):
+        return Funcall(args[0], args[1:])
+
     signum = lambda self, args: Value(Decimal(args[0]))
 
-    escstr = lambda self, tok: Value(tok[0].value)
-    rawstr = lambda self, tok: Identifier(tok[0].value, default_to_string=True)
-    propname = lambda self, tok: Identifier(tok[0].value)
+    string = lambda self, tok: Value(tok[0].value)
+    string_or_ident = lambda self, tok: IdentifierOrString(tok[0].value)
+    ident = lambda self, tok: Identifier(tok[0].value)
 
     def date(self, args):
         return Value(QueryDate.parse(args[0]))
@@ -383,6 +403,3 @@ class Query:
 
     def apply(self, txns: list[Txn]) -> list[Txn]:
         return self.ast.apply(txns)
-
-
-q = Query("acct=venmo date>=2024-02")

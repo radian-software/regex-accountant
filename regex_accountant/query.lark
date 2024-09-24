@@ -8,10 +8,11 @@
 ?start: pipeline
 
 pipeline: operation ("|" operation)*
-operation: ["filter"] filter -> op_filter
+operation: "filter" filter -> op_filter
     | "set" setter+ -> op_set
-    | "sort" expr ("," expr)* ("desc" | "asc") -> op_sort
+    | "sort" expr ("," expr)* /desc|asc/ -> op_sort
     | "join" filter -> op_filter
+    | filter -> op_filter
 
 ?filter: filter_conj ("or" filter_conj)*
 ?filter_conj: filter_atom (["and"] filter_atom)*
@@ -27,8 +28,8 @@ date: /[0-9]+-[0-9]+(-[0-9]+)?/
     | "(" expr ")"
     | funcname "(" expr ("," expr)* ")" -> expr_func
     | value
-?value: SIGNED_NUMBER -> signum | ESCAPED_STRING -> escstr | propname
-loose_string: ESCAPED_STRING -> escstr | CNAME -> rawstr
-funcname: CNAME -> rawstr
-propname: CNAME ("." CNAME)*
+?value: SIGNED_NUMBER -> signum | ESCAPED_STRING -> string | propname
+loose_string: ESCAPED_STRING -> string | CNAME -> string_or_ident
+funcname: CNAME -> ident
+propname: CNAME ("." CNAME)* -> ident
 setter: propname "=" (loose_string | expr)

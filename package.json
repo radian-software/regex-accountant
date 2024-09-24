@@ -11,5 +11,8 @@
   },
   "scripts": {
     "css-watch": "tailwindcss -i ./regex_accountant/server_assets/accountant.css -o ./regex_accountant/server_assets/static/styles/accountant.css --watch"
+  },
+  "devDependencies": {
+    "update-browserslist-db": "^1.1.0"
   }
 }

@@ -42,7 +42,7 @@
           <div class="table-cell px-2 py-1">
             {{ txn.date_posted.strftime('%Y-%m-%d') }}
           </div>
-          <div class="table-cell px-2 py-1 text-right">
+          <div class="table-cell px-2 py-1 text-right text-nowrap">
             {{ txn.amount.__str__().replace('-', '−') }} {{ txn.currency }}
           </div>
           <div class="table-cell px-2 py-1">{{ txn.account }}</div>
