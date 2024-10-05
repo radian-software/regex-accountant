@@ -1,4 +1,8 @@
-from dataclasses import dataclass
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+import re
+from uuid import UUID
 
 from regex_accountant.fetcher_api import Transaction
 
@@ -6,6 +10,7 @@ from regex_accountant.fetcher_api import Transaction
 @dataclass
 class ExtTransaction(Transaction):
     account: str = ""
+    custom_fields: dict[str, str] = field(default_factory=dict)
 
     @property
     def summary(self) -> str:
@@ -20,3 +25,48 @@ class ExtTransaction(Transaction):
         ):
             s += f" via {part}"
         return s
+
+
+@dataclass
+class Rule:
+
+    id: UUID
+    query: Query
+
+    @staticmethod
+    def fromjson(j: dict) -> Rule:
+        return Rule(id=UUID(j["id"]), query=Query(j["query"]))
+
+
+@dataclass
+class RulesConfig:
+
+    redaction_patterns: list[str]
+    redaction_regex: re.Pattern
+
+    custom_fields: set[str]
+    field_lookup: dict[str, str]
+
+    rules: list[Rule]
+
+    @staticmethod
+    def fromjson(j: dict) -> RulesConfig:
+        patterns = j.get("redaction", {}).get("patterns", [])
+        field_lookup = {
+            item: key
+            for key, val in j.get("fields", {}).items()
+            for item in [key, *val["aliases"]]
+        }
+        c = RulesConfig(
+            redaction_patterns=patterns,
+            redaction_regex=re.compile("|".join(f"({pat})" for pat in patterns))
+            if patterns
+            else re.compile(r"\A(?!x)x"),
+            custom_fields=set(field_lookup.values()),
+            field_lookup=field_lookup,
+            rules=[Rule.fromjson(r) for r in j.get("rules", [])],
+        )
+        return c
+
+
+from regex_accountant.query import Query

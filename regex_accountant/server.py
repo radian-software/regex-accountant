@@ -11,7 +11,7 @@ from markupsafe import Markup
 from regex_accountant.fetcher_api import Transaction
 import regex_accountant.log as log
 import regex_accountant.persist as persist
-from regex_accountant.postprocess import ExtTransaction as Txn
+from regex_accountant.postprocess import ExtTransaction as Txn, RulesConfig
 from regex_accountant.query import Query
 import regex_accountant.utils as utils
 
@@ -24,7 +24,7 @@ class Server:
     def redact(self, s: str) -> Markup:
         parts = []
         cur_idx = 0
-        for match in re.finditer(self.redaction_regex, s):
+        for match in re.finditer(self.rules.redaction_regex, s):
             if match.start() > cur_idx:
                 parts.append(Markup.escape(s[cur_idx : match.start()]))
                 parts.append(
@@ -43,9 +43,9 @@ class Server:
 
         @app.route("/")
         def _route_app():
-            txns = list(reversed(self.txns))
+            txns = list(txn.copy() for txn in reversed(self.txns))
             if query := flask.request.args.get("q", "").strip():
-                txns = Query(query).apply(txns)
+                txns = Query(query).apply(txns, self.rules)
             return flask.render_template(
                 "app.html",
                 txns=txns,
@@ -71,10 +71,6 @@ class Server:
 
         return app
 
-    def _get_redaction_regex(self) -> re.Pattern:
-        patterns = self.rules.get("redaction", {}).get("patterns", [])
-        return re.compile("|".join(f"({pat})" for pat in patterns))
-
     def load_transactions(self):
         cfg = persist.read_config()
         txns = []
@@ -95,8 +91,10 @@ class Server:
         logging.info(
             f"Loaded {len(txns)} transactions from {len(cfg['accounts'])} accounts"
         )
-        self.rules = persist.read_rules()
-        self.redaction_regex = self._get_redaction_regex()
+        self.rules = RulesConfig.fromjson(persist.read_rules_config())
+        for rule in self.rules.rules:
+            rule.query.apply(self.txns, self.rules)
+        logging.info(f"Applied {len(self.rules.rules)} queries from rulesfile")
 
 
 log.setup_logger(debug=bool(os.environ.get("REGEX_ACCOUNTANT_DEBUG")))

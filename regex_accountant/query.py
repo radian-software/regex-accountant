@@ -62,7 +62,7 @@ class QueryDate:
 @dataclass
 class Operation(ABC):
     @abstractmethod
-    def apply(self, txns: list[Txn]) -> list[Txn]:
+    def apply(self, txns: list[Txn], cfg: RulesConfig) -> list[Txn]:
         raise NotImplementedError
 
 
@@ -331,7 +331,7 @@ class Filter(Operation):
     def matches(self, txn: Txn) -> bool:
         return self.expr.matches(txn)
 
-    def apply(self, txns: list[Txn]) -> list[Txn]:
+    def apply(self, txns: list[Txn], cfg: RulesConfig) -> list[Txn]:
         return [txn for txn in txns if self.matches(txn)]
 
 
@@ -340,7 +340,7 @@ class Sort(Operation):
     expr: Expr
     reverse: bool
 
-    def apply(self, txns: list[Txn]) -> list[Txn]:
+    def apply(self, txns: list[Txn], cfg: RulesConfig) -> list[Txn]:
         return list(sorted(txns, key=self.expr.evaluate, reverse=self.reverse))
 
 
@@ -354,7 +354,14 @@ class Setter:
 class Set(Operation):
     setters: list[Setter]
 
-    def apply(self, txns: list[Txn]) -> list[Txn]:
+    def apply(self, txns: list[Txn], cfg: RulesConfig) -> list[Txn]:
+        for setter in self.setters:
+            assert setter.field.value in cfg.field_lookup, setter.field
+        for txn in txns:
+            for setter in self.setters:
+                txn.custom_fields[
+                    cfg.field_lookup[setter.field.value]
+                ] = setter.value.evaluate(txn)
         return txns
 
 
@@ -362,9 +369,9 @@ class Set(Operation):
 class Pipeline:
     ops: list[Operation]
 
-    def apply(self, txns: list[Txn]) -> list[Txn]:
+    def apply(self, txns: list[Txn], cfg: RulesConfig) -> list[Txn]:
         for op in self.ops:
-            txns = op.apply(txns)
+            txns = op.apply(txns, cfg)
         return txns
 
 
@@ -423,5 +430,8 @@ class Query:
     def __init__(self, q: str):
         self.ast: Pipeline = Transformer().transform(parser.parse(q))
 
-    def apply(self, txns: list[Txn]) -> list[Txn]:
-        return self.ast.apply(txns)
+    def apply(self, txns: list[Txn], cfg: RulesConfig) -> list[Txn]:
+        return self.ast.apply(txns, cfg)
+
+
+from regex_accountant.postprocess import RulesConfig

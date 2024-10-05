@@ -25,9 +25,9 @@ def read_sessions() -> dict:
         return {}
 
 
-def read_rules() -> dict:
+def read_rules_config() -> dict:
     try:
-        with open(xdg_config_home() / "regex-accountant" / "rules.json") as f:
+        with open(xdg_data_home() / "regex-accountant" / "rules.json") as f:
             return json.load(f)
     except FileNotFoundError:
         return {}
