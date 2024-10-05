@@ -29,8 +29,8 @@ date: /[0-9]+-[0-9]+(-[0-9]+)?/
     | "(" expr ")"
     | funcname "(" expr ("," expr)* ")" -> expr_func
     | value
-?value: SIGNED_NUMBER -> signum | ESCAPED_STRING -> string | propname
-loose_string: ESCAPED_STRING -> string | CNAME -> string_or_ident
+?value: SIGNED_NUMBER -> signum | ESCAPED_STRING -> escstr | propname
+loose_string: ESCAPED_STRING -> escstr | CNAME -> string_or_ident
 funcname: CNAME -> ident
 propname: CNAME ("." CNAME)* -> ident
 setter: propname "=" (loose_string | expr)

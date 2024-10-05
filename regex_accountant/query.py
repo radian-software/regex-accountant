@@ -12,6 +12,7 @@ from typing import Any, Tuple
 import lark
 
 from regex_accountant.postprocess import ExtTransaction as Txn
+from regex_accountant.utils import decode_escapes
 
 
 THIS_DIR = Path(__file__).resolve().parent
@@ -392,6 +393,7 @@ class Transformer(lark.Transformer):
     signum = lambda self, args: Value(Decimal(args[0]))
 
     string = lambda self, tok: Value(tok[0].value)
+    escstr = lambda self, tok: Value(decode_escapes(tok[0].value)[1:-1])
     string_or_ident = lambda self, tok: IdentifierOrString(tok[0].value)
     ident = lambda self, tok: Identifier(tok[0].value)
 
