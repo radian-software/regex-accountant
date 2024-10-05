@@ -345,6 +345,20 @@ class Sort(Operation):
 
 
 @dataclass
+class Setter:
+    field: Identifier
+    value: Expr
+
+
+@dataclass
+class Set(Operation):
+    setters: list[Setter]
+
+    def apply(self, txns: list[Txn]) -> list[Txn]:
+        return txns
+
+
+@dataclass
 class Pipeline:
     ops: list[Operation]
 
@@ -360,6 +374,10 @@ class Transformer(lark.Transformer):
     op_sort = lambda self, args: Sort(
         args[0], args[1].value == "desc" if len(args) > 1 else False
     )
+    op_set = lambda self, args: Set(args)
+
+    def setter(self, args):
+        return Setter(args[0], args[1])
 
     def filter(self, conjs):
         return FilterOr(conjs)

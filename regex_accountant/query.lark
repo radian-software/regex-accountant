@@ -1,5 +1,7 @@
 %import common.CNAME
+%import common.DIGIT
 %import common.ESCAPED_STRING
+%import common.LETTER
 %import common.SIGNED_NUMBER
 %import common.WS
 
@@ -30,7 +32,8 @@ date: /[0-9]+-[0-9]+(-[0-9]+)?/
     | funcname "(" expr ("," expr)* ")" -> expr_func
     | value
 ?value: SIGNED_NUMBER -> signum | ESCAPED_STRING -> escstr | propname
-loose_string: ESCAPED_STRING -> escstr | CNAME -> string_or_ident
+loose_string: ESCAPED_STRING -> escstr | CNAME -> string_or_ident | LOOSE_CNAME -> string
 funcname: CNAME -> ident
 propname: CNAME ("." CNAME)* -> ident
 setter: propname "=" (loose_string | expr)
+LOOSE_CNAME: ("_"|LETTER) ("_"|LETTER|DIGIT|":")*

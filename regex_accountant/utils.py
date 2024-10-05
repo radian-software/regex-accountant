@@ -1,11 +1,15 @@
 import codecs
 from datetime import datetime, timedelta
+from pathlib import Path
 import re
 from typing import TypeVar
 
 import mashumaro.codecs.basic as basic_codec
 from mashumaro.dialect import Dialect
 from mashumaro.types import SerializationStrategy
+
+PACKAGE_DIR = Path(__file__).parent
+REPO_DIR = PACKAGE_DIR.parent
 
 T = TypeVar("T")
 

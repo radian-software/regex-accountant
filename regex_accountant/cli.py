@@ -15,6 +15,7 @@ import regex_accountant.log as log
 import regex_accountant.model as model
 import regex_accountant.persist as persist
 import regex_accountant.utils as utils
+from regex_accountant.utils import PACKAGE_DIR
 
 
 def main():
@@ -213,7 +214,15 @@ def main():
                 "127.0.0.1",
                 "-p",
                 str(args.port),
-                "--debug" if args.debug else "--no-debug",
+                *(
+                    [
+                        "--debug",
+                        "--extra-files",
+                        ":".join(str(PACKAGE_DIR / p) for p in ["query.lark"]),
+                    ]
+                    if args.debug
+                    else ["--no-debug"]
+                ),
             ],
             env={
                 **os.environ,
