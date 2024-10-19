@@ -1,3 +1,4 @@
+import copy
 from dataclasses import dataclass
 import json
 import logging
@@ -43,7 +44,7 @@ class Server:
 
         @app.route("/")
         def _route_app():
-            txns = list(txn.copy() for txn in reversed(self.txns))
+            txns = list(copy.deepcopy(txn) for txn in reversed(self.txns))
             if query := flask.request.args.get("q", "").strip():
                 txns = Query(query).apply(txns, self.rules)
             return flask.render_template(
