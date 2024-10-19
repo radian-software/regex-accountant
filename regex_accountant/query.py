@@ -69,20 +69,20 @@ class Operation(ABC):
 @dataclass
 class BoolExpr(ABC):
     @abstractmethod
-    def matches(self, txn: Txn) -> bool:
+    def matches(self, txn: Txn, cfg: RulesConfig) -> bool:
         raise NotImplementedError
 
 
 @dataclass
 class Expr(ABC):
-    def evaluate(self, txn: Txn) -> Any:
+    def evaluate(self, txn: Txn, cfg: RulesConfig) -> Any:
         pass
 
 
 @dataclass
 class Comparator(ABC):
     @abstractmethod
-    def matches(self, txn: Txn, lhs: Expr, rhs: Expr) -> bool:
+    def matches(self, txn: Txn, lhs: Expr, rhs: Expr, cfg: RulesConfig) -> bool:
         raise NotImplementedError
 
     @staticmethod
@@ -100,58 +100,70 @@ class Comparator(ABC):
 
 
 class Equals(Comparator):
-    def matches(self, txn: Txn, lhs: Expr, rhs: Expr) -> bool:
-        l, r = Comparator.preprocess(lhs.evaluate(txn), rhs.evaluate(txn), "normdate")
+    def matches(self, txn: Txn, lhs: Expr, rhs: Expr, cfg: RulesConfig) -> bool:
+        l, r = Comparator.preprocess(
+            lhs.evaluate(txn, cfg), rhs.evaluate(txn, cfg), "normdate"
+        )
         return l == r
 
 
 class EqualsIgnoringCase(Comparator):
-    def matches(self, txn: Txn, lhs: Expr, rhs: Expr) -> bool:
+    def matches(self, txn: Txn, lhs: Expr, rhs: Expr, cfg: RulesConfig) -> bool:
         l, r = Comparator.preprocess(
-            lhs.evaluate(txn), rhs.evaluate(txn), "casefold", "normdate"
+            lhs.evaluate(txn, cfg), rhs.evaluate(txn, cfg), "casefold", "normdate"
         )
         return l == r
 
 
 class Contains(Comparator):
-    def matches(self, txn: Txn, lhs: Expr, rhs: Expr) -> bool:
-        l, r = Comparator.preprocess(lhs.evaluate(txn), rhs.evaluate(txn))
+    def matches(self, txn: Txn, lhs: Expr, rhs: Expr, cfg: RulesConfig) -> bool:
+        l, r = Comparator.preprocess(lhs.evaluate(txn, cfg), rhs.evaluate(txn, cfg))
         return r in l
 
 
 class ContainsIgnoringCase(Comparator):
-    def matches(self, txn: Txn, lhs: Expr, rhs: Expr) -> bool:
-        l, r = Comparator.preprocess(lhs.evaluate(txn), rhs.evaluate(txn), "casefold")
+    def matches(self, txn: Txn, lhs: Expr, rhs: Expr, cfg: RulesConfig) -> bool:
+        l, r = Comparator.preprocess(
+            lhs.evaluate(txn, cfg), rhs.evaluate(txn, cfg), "casefold"
+        )
         return r in l
 
 
 class LessThan(Comparator):
-    def matches(self, txn: Txn, lhs: Expr, rhs: Expr) -> bool:
-        l, r = Comparator.preprocess(lhs.evaluate(txn), rhs.evaluate(txn), "normdate")
+    def matches(self, txn: Txn, lhs: Expr, rhs: Expr, cfg: RulesConfig) -> bool:
+        l, r = Comparator.preprocess(
+            lhs.evaluate(txn, cfg), rhs.evaluate(txn, cfg), "normdate"
+        )
         return l < r
 
 
 class LessThanOrEqual(Comparator):
-    def matches(self, txn: Txn, lhs: Expr, rhs: Expr) -> bool:
-        l, r = Comparator.preprocess(lhs.evaluate(txn), rhs.evaluate(txn), "normdate")
+    def matches(self, txn: Txn, lhs: Expr, rhs: Expr, cfg: RulesConfig) -> bool:
+        l, r = Comparator.preprocess(
+            lhs.evaluate(txn, cfg), rhs.evaluate(txn, cfg), "normdate"
+        )
         return l <= r
 
 
 class GreaterThan(Comparator):
-    def matches(self, txn: Txn, lhs: Expr, rhs: Expr) -> bool:
-        l, r = Comparator.preprocess(lhs.evaluate(txn), rhs.evaluate(txn), "normdate")
+    def matches(self, txn: Txn, lhs: Expr, rhs: Expr, cfg: RulesConfig) -> bool:
+        l, r = Comparator.preprocess(
+            lhs.evaluate(txn, cfg), rhs.evaluate(txn, cfg), "normdate"
+        )
         return l > r
 
 
 class GreaterThanOrEqual(Comparator):
-    def matches(self, txn: Txn, lhs: Expr, rhs: Expr) -> bool:
-        l, r = Comparator.preprocess(lhs.evaluate(txn), rhs.evaluate(txn), "normdate")
+    def matches(self, txn: Txn, lhs: Expr, rhs: Expr, cfg: RulesConfig) -> bool:
+        l, r = Comparator.preprocess(
+            lhs.evaluate(txn, cfg), rhs.evaluate(txn, cfg), "normdate"
+        )
         return l >= r
 
 
 class MatchesRegex(Comparator):
-    def matches(self, txn: Txn, lhs: Expr, rhs: Expr) -> bool:
-        l, r = Comparator.preprocess(lhs.evaluate(txn), rhs.evaluate(txn))
+    def matches(self, txn: Txn, lhs: Expr, rhs: Expr, cfg: RulesConfig) -> bool:
+        l, r = Comparator.preprocess(lhs.evaluate(txn, cfg), rhs.evaluate(txn, cfg))
         return re.fullmatch(r, l)
 
 
@@ -175,7 +187,7 @@ class Identifier(Expr):
     def evaluate_fallback(self) -> Any:
         return None
 
-    def evaluate(self, txn: Txn) -> Any:
+    def evaluate(self, txn: Txn, cfg: RulesConfig) -> Any:
         if self.value in {"date", "date_posted", "posted"}:
             return txn.date_posted
         if self.value in {"date_cleared", "cleared"}:
@@ -228,6 +240,9 @@ class Identifier(Expr):
             return txn.account_id
         if self.value in {"source", "src", "fetcher"}:
             return txn.account
+        if self.value in cfg.field_lookup:
+            field_name = cfg.field_lookup[self.value]
+            return txn.custom_fields.get(field_name, "")
         if res := self.evaluate_fallback():
             return res
         raise RuntimeError(f"no such txn property {repr(self.value)}")
@@ -244,26 +259,26 @@ class Comparison(BoolExpr):
     comp: Comparator
     rhs: Expr
 
-    def matches(self, txn: Txn) -> bool:
-        return self.comp.matches(txn, self.lhs, self.rhs)
+    def matches(self, txn: Txn, cfg: RulesConfig) -> bool:
+        return self.comp.matches(txn, self.lhs, self.rhs, cfg)
 
 
 @dataclass
 class Plus(Expr):
     args: list[Expr]
 
-    def evaluate(self, txn: Txn) -> Any:
-        return sum(arg.evaluate(txn) for arg in self.args)
+    def evaluate(self, txn: Txn, cfg: RulesConfig) -> Any:
+        return sum(arg.evaluate(txn, cfg) for arg in self.args)
 
 
 @dataclass
 class Times(Expr):
     args: list[Expr]
 
-    def evaluate(self, txn: Txn) -> Any:
+    def evaluate(self, txn: Txn, cfg: RulesConfig) -> Any:
         product = 1
         for arg in self.args:
-            product *= arg.evaluate(txn)
+            product *= arg.evaluate(txn, cfg)
         return product
 
 
@@ -272,16 +287,16 @@ class Divide(Expr):
     lhs: Expr
     rhs: Expr
 
-    def evaluate(self, txn: Txn) -> Any:
-        return self.lhs.evaluate(txn) / self.rhs.evaluate(txn)
+    def evaluate(self, txn: Txn, cfg: RulesConfig) -> Any:
+        return self.lhs.evaluate(txn, cfg) / self.rhs.evaluate(txn, cfg)
 
 
 @dataclass
 class Negate(Expr):
     arg: Expr
 
-    def evaluate(self, txn: Txn) -> Any:
-        return -self.arg.evaluate(txn)
+    def evaluate(self, txn: Txn, cfg: RulesConfig) -> Any:
+        return -self.arg.evaluate(txn, cfg)
 
 
 function_table = {
@@ -294,9 +309,9 @@ class Funcall(Expr):
     funcname: Identifier
     args: list[Expr]
 
-    def evaluate(self, txn: Txn) -> Any:
+    def evaluate(self, txn: Txn, cfg: RulesConfig) -> Any:
         return function_table[self.funcname.value](
-            *(arg.evaluate(txn) for arg in self.args)
+            *(arg.evaluate(txn, cfg) for arg in self.args)
         )
 
 
@@ -304,7 +319,7 @@ class Funcall(Expr):
 class Value(Expr):
     value: Any
 
-    def evaluate(self, txn: Txn) -> Any:
+    def evaluate(self, txn: Txn, cfg: RulesConfig) -> Any:
         return self.value
 
 
@@ -312,27 +327,27 @@ class Value(Expr):
 class FilterOr(BoolExpr):
     exprs: list[BoolExpr]
 
-    def matches(self, txn: Txn):
-        return any(expr.matches(txn) for expr in self.exprs)
+    def matches(self, txn: Txn, cfg: RulesConfig):
+        return any(expr.matches(txn, cfg) for expr in self.exprs)
 
 
 @dataclass
 class FilterAnd(BoolExpr):
     exprs: list[BoolExpr]
 
-    def matches(self, txn: Txn):
-        return all(expr.matches(txn) for expr in self.exprs)
+    def matches(self, txn: Txn, cfg: RulesConfig):
+        return all(expr.matches(txn, cfg) for expr in self.exprs)
 
 
 @dataclass
 class Filter(Operation):
     expr: BoolExpr
 
-    def matches(self, txn: Txn) -> bool:
-        return self.expr.matches(txn)
+    def matches(self, txn: Txn, cfg: RulesConfig) -> bool:
+        return self.expr.matches(txn, cfg)
 
     def apply(self, txns: list[Txn], cfg: RulesConfig) -> list[Txn]:
-        return [txn for txn in txns if self.matches(txn)]
+        return [txn for txn in txns if self.matches(txn, cfg)]
 
 
 @dataclass
@@ -341,7 +356,11 @@ class Sort(Operation):
     reverse: bool
 
     def apply(self, txns: list[Txn], cfg: RulesConfig) -> list[Txn]:
-        return list(sorted(txns, key=self.expr.evaluate, reverse=self.reverse))
+        return list(
+            sorted(
+                txns, key=lambda obj: self.expr.evaluate(obj, cfg), reverse=self.reverse
+            )
+        )
 
 
 @dataclass
@@ -361,7 +380,7 @@ class Set(Operation):
             for setter in self.setters:
                 txn.custom_fields[
                     cfg.field_lookup[setter.field.value]
-                ] = setter.value.evaluate(txn)
+                ] = setter.value.evaluate(txn, cfg)
         return txns
 
 
