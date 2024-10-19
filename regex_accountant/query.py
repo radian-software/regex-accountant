@@ -340,6 +340,14 @@ class FilterAnd(BoolExpr):
 
 
 @dataclass
+class FilterNot(BoolExpr):
+    expr: BoolExpr
+
+    def matches(self, txn: Txn, cfg: RulesConfig):
+        return not self.expr.matches(txn, cfg)
+
+
+@dataclass
 class Filter(Operation):
     expr: BoolExpr
 
@@ -415,7 +423,15 @@ class Transformer(lark.Transformer):
         if args[1] is None:
             return args[0]
         lhs, comp, rhs = args
-        return Comparison(lhs, comparator_table[comp.value], rhs)
+        invert = False
+        opstr = comp.value
+        if opstr.startswith("!"):
+            opstr = opstr[1:]
+            invert = True
+        expr = Comparison(lhs, comparator_table[opstr], rhs)
+        if invert:
+            expr = FilterNot(expr)
+        return expr
 
     def expr(self, args):
         args = list(reversed(args))

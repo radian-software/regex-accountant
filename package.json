@@ -13,6 +13,8 @@
     "css-watch": "tailwindcss -i ./regex_accountant/server_assets/accountant.css -o ./regex_accountant/server_assets/static/styles/accountant.css --watch"
   },
   "devDependencies": {
+    "prettier": "^3.3.3",
+    "prettier-plugin-jinja-template": "^2.0.0",
     "update-browserslist-db": "^1.1.0"
   }
 }

@@ -24,32 +24,38 @@
         onfocus="this.oldValue = this.value; this.value = ''; this.value = this.oldValue;"
       />
     </form>
-    <div class="table my-5 border border-gray-300 border-collapse">
-      <div class="table-header-group bg-gray-300">
-        <div class="table-row">
-          <div class="table-cell p-1">Date</div>
-          <div class="table-cell p-1">Amount</div>
-          <div class="table-cell p-1">Source</div>
-          <div class="table-cell p-1">Description</div>
+    {% if error %}
+      <pre class="my-5">Error: {{ error }}</pre>
+    {% elif not txns %}
+      <p class="my-5">No results</p>
+    {% else %}
+      <div class="table my-5 border border-gray-300 border-collapse">
+        <div class="table-header-group bg-gray-300">
+          <div class="table-row">
+            <div class="table-cell p-1">Date</div>
+            <div class="table-cell p-1">Amount</div>
+            <div class="table-cell p-1">Source</div>
+            <div class="table-cell p-1">Description</div>
+          </div>
+        </div>
+        <div class="table-row-group">
+          {% for txn in txns %}
+            <a
+              href="/txn/{{ txn.account }}/{{ txn.source_uid }}"
+              class="table-row border border-gray-300"
+            >
+              <div class="table-cell px-2 py-1">
+                {{ txn.date_posted.strftime('%Y-%m-%d') }}
+              </div>
+              <div class="table-cell px-2 py-1 text-right text-nowrap">
+                {{ txn.amount.__str__().replace('-', '−') }} {{ txn.currency }}
+              </div>
+              <div class="table-cell px-2 py-1">{{ txn.account }}</div>
+              <div class="table-cell px-2 py-1">{{ redact(txn.summary) }}</div>
+            </a>
+          {% endfor %}
         </div>
       </div>
-      <div class="table-row-group">
-        {% for txn in txns %}
-        <a
-          href="/txn/{{ txn.account }}/{{ txn.source_uid }}"
-          class="table-row border border-gray-300"
-        >
-          <div class="table-cell px-2 py-1">
-            {{ txn.date_posted.strftime('%Y-%m-%d') }}
-          </div>
-          <div class="table-cell px-2 py-1 text-right text-nowrap">
-            {{ txn.amount.__str__().replace('-', '−') }} {{ txn.currency }}
-          </div>
-          <div class="table-cell px-2 py-1">{{ txn.account }}</div>
-          <div class="table-cell px-2 py-1">{{ redact(txn.summary) }}</div>
-        </a>
-        {% endfor %}
-      </div>
-    </div>
+    {% endif %}
   </body>
 </html>

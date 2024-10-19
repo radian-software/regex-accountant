@@ -7,6 +7,7 @@ from pathlib import Path
 import re
 
 import flask
+from lark import LarkError, ParseError
 from markupsafe import Markup
 
 from regex_accountant.fetcher_api import Transaction
@@ -45,10 +46,17 @@ class Server:
         @app.route("/")
         def _route_app():
             txns = list(copy.deepcopy(txn) for txn in reversed(self.txns))
+            error = None
             if query := flask.request.args.get("q", "").strip():
-                txns = Query(query).apply(txns, self.rules)
+                try:
+                    parsed_query = Query(query)
+                except ParseError as e:
+                    error = str(e)
+                else:
+                    txns = Query(query).apply(txns, self.rules)
             return flask.render_template(
                 "app.html",
+                error=error,
                 txns=txns,
                 query=query,
                 redact=self.redact,
