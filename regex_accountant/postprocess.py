@@ -5,10 +5,12 @@ import re
 from uuid import UUID
 
 from regex_accountant.fetcher_api import Transaction
+from regex_accountant.utils import nudge_date
 
 
 @dataclass
 class ExtTransaction(Transaction):
+    index: int = -1
     account: str = ""
     custom_fields: dict[str, str] = field(default_factory=dict)
 
@@ -25,6 +27,14 @@ class ExtTransaction(Transaction):
         ):
             s += f" via {part}"
         return s
+
+    @property
+    def sort_date_posted(self):
+        return nudge_date(super().sort_date_posted, self.index)
+
+    @property
+    def sort_date_cleared(self):
+        return nudge_date(super().sort_date_cleared, self.index)
 
 
 @dataclass

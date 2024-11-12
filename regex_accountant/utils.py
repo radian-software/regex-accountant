@@ -72,6 +72,13 @@ def normalize_date(dt: datetime) -> datetime:
     return dt.astimezone()
 
 
+def nudge_date(dt: datetime, index: int) -> datetime:
+    if index < 0:
+        return dt
+    dt += timedelta(microseconds=index)
+    return dt
+
+
 # https://stackoverflow.com/a/24519338
 ESCAPE_SEQUENCE_RE = re.compile(
     r"""

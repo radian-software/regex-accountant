@@ -83,13 +83,17 @@ class Server:
     def load_transactions(self):
         cfg = persist.read_config()
         txns = []
+        index = 0
         for account in cfg["accounts"]:
             ts = persist.read_txns(account)
             if ts:
                 txns.extend(
-                    utils.dict_to_obj(Txn, {**txn, "account": account})
-                    for txn in ts["txns"]
+                    utils.dict_to_obj(
+                        Txn, {**txn, "account": account, "index": index + extra}
+                    )
+                    for extra, txn in enumerate(ts["txns"])
                 )
+                index += len(ts["txns"])
         self.txns = txns
         self.txns.sort(key=lambda txn: txn.sort_date)
         self.txns_by_id = {}

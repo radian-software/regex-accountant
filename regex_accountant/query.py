@@ -189,9 +189,9 @@ class Identifier(Expr):
 
     def evaluate(self, txn: Txn, cfg: RulesConfig) -> Any:
         if self.value in {"date", "date_posted", "posted"}:
-            return txn.date_posted
+            return txn.sort_date_posted
         if self.value in {"date_cleared", "cleared"}:
-            return txn.date_cleared
+            return txn.sort_date_cleared
         if self.value in {"currency", "cur"}:
             return txn.currency
         if self.value in {"amount", "amt", "value", "val"}:

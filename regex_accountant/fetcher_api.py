@@ -135,7 +135,15 @@ class Transaction:
 
     @property
     def sort_date(self):
+        return self.sort_date_posted
+
+    @property
+    def sort_date_posted(self):
         return normalize_date(self.date_posted)
+
+    @property
+    def sort_date_cleared(self):
+        return normalize_date(self.date_cleared)
 
 
 class Fetcher(abc.ABC):
