@@ -447,6 +447,10 @@ class Transformer(lark.Transformer):
             return parts[0]
         return Plus(parts)
 
+    def expr_negate(self, args):
+        arg, = args
+        return Negate(arg)
+
     def expr_func(self, args):
         return Funcall(args[0], args[1:])
 

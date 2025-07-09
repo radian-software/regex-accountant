@@ -18,7 +18,7 @@ operation: "filter" filter -> op_filter
 
 ?filter: filter_conj ("or" filter_conj)*
 ?filter_conj: filter_atom (["and"] filter_atom)*
-?filter_atom: ("not" | "-") (filter_atom | expr) -> filt_not
+?filter_atom: ("not" | "~") (filter_atom | expr) -> filt_not
     | "(" filter ")"
     | "+" expr
     | expr COMPARATOR (loose_string | expr) -> filt_comp
@@ -27,7 +27,7 @@ COMPARATOR: /!?(==?|::?|<=?|>=?|~)/
 ?expr: date | expr_mul (/[+-]/ expr_mul)*
 date: /[0-9]+-[0-9]+(-[0-9]+)?/
 ?expr_mul: expr_atom (("*" | "/") expr_atom)*
-?expr_atom: "-" expr_atom -> expr_not
+?expr_atom: "-" expr_atom -> expr_negate
     | "(" expr ")"
     | funcname "(" expr ("," expr)* ")" -> expr_func
     | value

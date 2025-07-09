@@ -93,6 +93,7 @@ CURRENCY_SYMBOLS = {
     # former will not match.
     "CA$": "CAD",
     "A$": "AUD",
+    "NZ$": "NZD",
     "$": "USD",
     "€": "EUR",
     "£": "GBP",
