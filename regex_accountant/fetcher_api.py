@@ -7,6 +7,8 @@ from decimal import Decimal
 import inspect
 import logging
 import pdb
+import re
+import subprocess
 import time
 import traceback
 import typing
@@ -14,6 +16,8 @@ import typing
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
+
+import undetected_chromedriver
 
 from regex_accountant.utils import normalize_date
 
@@ -32,17 +36,32 @@ CT = typing.TypeVar("CT", bound=Config)
 ST = typing.TypeVar("ST", bound=Session)
 
 
+def get_chromium_version():
+    stdout = subprocess.run(
+        ["chromium-browser", "--version"], check=True, stdout=subprocess.PIPE
+    ).stdout.decode()
+    match = re.search(r"[0-9]+", stdout)
+    assert match, stdout
+    return int(match.group(0))
+
+
 class Context(typing.Generic[CT, ST]):
     def __init__(self, config: CT, session: ST | None, debug: bool):
         self.config = config
         self.session = session
         self.debug = debug
         self._browser = None
+        self.use_chrome = False
 
     @property
     def browser(self) -> WebDriver:
         if not self._browser:
-            self._browser = webdriver.Firefox()
+            if self.use_chrome:
+                self._browser = undetected_chromedriver.Chrome(
+                    version_main=get_chromium_version()
+                )
+            else:
+                self._browser = webdriver.Firefox()
         return self._browser
 
     def close_browser(self) -> None:
@@ -147,6 +166,9 @@ class Transaction:
 
 
 class Fetcher(abc.ABC):
+    def setup(self, ctx: Context) -> None:
+        pass
+
     @abc.abstractmethod
     def authenticate(self, ctx: Context) -> Session:
         pass

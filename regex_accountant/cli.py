@@ -114,6 +114,7 @@ def main():
         ctx = api.Context(account_config, account_session, args.debug)
         try:
             fetcher = Fetcher()
+            fetcher.setup(ctx)
             if args.no_check_auth:
                 auth_passed = True
             elif args.force_new_session or args.force_reauth:

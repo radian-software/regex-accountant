@@ -20,6 +20,7 @@ flask = "^2.3.2"
 pytz = "^2024.1"
 mashumaro = "^3.13"
 lark = "^1.2.2"
+undetected-chromedriver = "^3.5.5"
 
 [tool.poetry.scripts]
 rac = "regex_accountant.cli:main"
