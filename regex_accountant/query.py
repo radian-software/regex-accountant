@@ -11,7 +11,6 @@ from typing import Any, Tuple
 
 import lark
 
-from regex_accountant.postprocess import ExtTransaction as Txn
 from regex_accountant.utils import decode_escapes
 
 
@@ -50,12 +49,12 @@ class QueryDate:
         return True
 
     def __le__(self, o: QueryDate | datetime | date) -> bool:
-        if self.year > o.year:
-            return False
-        if self.month and o.month and self.month > o.month:
-            return False
-        if self.day and o.day and self.day > o.day:
-            return False
+        if self.year != o.year:
+            return self.year < o.year
+        if self.month and o.month and self.month != o.month:
+            return self.month < o.month
+        if self.day and o.day and self.day != o.day:
+            return self.day < o.day
         return True
 
 
@@ -485,4 +484,5 @@ class Query:
         return self.ast.apply(txns, cfg)
 
 
+from regex_accountant.postprocess import ExtTransaction as Txn
 from regex_accountant.postprocess import RulesConfig
