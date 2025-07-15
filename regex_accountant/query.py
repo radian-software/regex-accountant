@@ -180,6 +180,61 @@ comparator_table = {
 }
 
 
+def get_builtin_field(name: str) -> list[str] | None:
+    if name in {"date", "date_posted", "posted"}:
+        return ["sort_date_posted"]
+    if name in {"date_cleared", "cleared"}:
+        return ["sort_date_cleared"]
+    if name in {"currency", "cur"}:
+        return ["currency"]
+    if name in {"amount", "amt", "value", "val"}:
+        return ["amount"]
+    if name in {"source_uid", "uid", "id"}:
+        return ["source_uid"]
+    if name in {"description", "desc"}:
+        return ["description"]
+    if name in {"description_short", "desc_short"}:
+        return ["description_short", "description"]
+    if name in {
+        "description_details",
+        "desc_details",
+        "description_detail",
+        "desc_detail",
+        "description_long",
+        "desc_long",
+    }:
+        return ["description_details", "description"]
+    if name in {"client", "counterparty", "merchant"}:
+        return ["client"]
+    if name in {"client_short", "counterparty_short", "merchant_short"}:
+        return ["client_short", "client"]
+    if name in {
+        "payment_method",
+        "method",
+        "payment_instrument",
+        "instrument",
+    }:
+        return ["payment_method"]
+    if name in {
+        "payment_method_short",
+        "method_short",
+        "payment_instrument_short",
+        "payment_instrument_short",
+    }:
+        return ["payment_method_short", "payment_method"]
+    if name in {
+        "payment_method_long",
+        "method_long",
+        "payment_instrument_long",
+        "payment_instrument_long",
+    }:
+        return ["payment_method_long", "payment_method"]
+    if name in {"account_id", "account", "acct_id", "acct"}:
+        return ["account_id"]
+    if name in {"source", "src", "fetcher"}:
+        return ["account"]
+
+
 @dataclass
 class Identifier(Expr):
     value: str
@@ -188,58 +243,11 @@ class Identifier(Expr):
         return None
 
     def evaluate(self, txn: Txn, cfg: RulesConfig) -> Any:
-        if self.value in {"date", "date_posted", "posted"}:
-            return txn.sort_date_posted
-        if self.value in {"date_cleared", "cleared"}:
-            return txn.sort_date_cleared
-        if self.value in {"currency", "cur"}:
-            return txn.currency
-        if self.value in {"amount", "amt", "value", "val"}:
-            return txn.amount
-        if self.value in {"source_uid", "uid", "id"}:
-            return txn.source_uid
-        if self.value in {"description", "desc"}:
-            return txn.description
-        if self.value in {"description_short", "desc_short"}:
-            return txn.description_short or txn.description
-        if self.value in {
-            "description_details",
-            "desc_details",
-            "description_detail",
-            "desc_detail",
-            "description_long",
-            "desc_long",
-        }:
-            return txn.description_details or txn.description
-        if self.value in {"client", "counterparty", "merchant"}:
-            return txn.client
-        if self.value in {"client_short", "counterparty_short", "merchant_short"}:
-            return txn.client_short or txn.client
-        if self.value in {
-            "payment_method",
-            "method",
-            "payment_instrument",
-            "instrument",
-        }:
-            return txn.payment_method
-        if self.value in {
-            "payment_method_short",
-            "method_short",
-            "payment_instrument_short",
-            "payment_instrument_short",
-        }:
-            return txn.payment_method_short or txn.payment_method
-        if self.value in {
-            "payment_method_long",
-            "method_long",
-            "payment_instrument_long",
-            "payment_instrument_long",
-        }:
-            return txn.payment_method_long or txn.payment_method
-        if self.value in {"account_id", "account", "acct_id", "acct"}:
-            return txn.account_id
-        if self.value in {"source", "src", "fetcher"}:
-            return txn.account
+        if builtin := get_builtin_field(self.value):
+            for prop in builtin:
+                if val := getattr(txn, prop):
+                    return val
+            return getattr(txn, builtin[-1])
         if self.value in cfg.field_lookup:
             field_name = cfg.field_lookup[self.value]
             return txn.custom_fields.get(field_name, "")
@@ -383,12 +391,16 @@ class Set(Operation):
 
     def apply(self, txns: list[Txn], cfg: RulesConfig) -> list[Txn]:
         for setter in self.setters:
-            assert setter.field.value in cfg.field_lookup, setter.field
+            assert setter.field.value in cfg.field_lookup or get_builtin_field(
+                setter.field.value
+            ), setter.field
         for txn in txns:
             for setter in self.setters:
-                txn.custom_fields[
-                    cfg.field_lookup[setter.field.value]
-                ] = setter.value.evaluate(txn, cfg)
+                result = setter.value.evaluate(txn, cfg)
+                if builtin := get_builtin_field(setter.field.value):
+                    setattr(txn, builtin[0], result)
+                else:
+                    txn.custom_fields[cfg.field_lookup[setter.field.value]] = result
         return txns
 
 
@@ -448,7 +460,7 @@ class Transformer(lark.Transformer):
         return Plus(parts)
 
     def expr_negate(self, args):
-        arg, = args
+        (arg,) = args
         return Negate(arg)
 
     def expr_func(self, args):
