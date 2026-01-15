@@ -792,18 +792,18 @@ files = [
 
 [[package]]
 name = "mashumaro"
-version = "3.13"
+version = "3.17"
 description = "Fast and well tested serialization library"
 optional = false
-python-versions = ">=3.8"
+python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "mashumaro-3.13-py3-none-any.whl", hash = "sha256:59457aebb90e85b8b195e5ccc2d46b608f2709bedb679f9d19a952f9bb1fb6ec"},
-    {file = "mashumaro-3.13.tar.gz", hash = "sha256:636c31afe39d991efe4cad269fef0c8ba408d87581118784d2a47924c2073faa"},
+    {file = "mashumaro-3.17-py3-none-any.whl", hash = "sha256:3964e2c804f62de9e4c58fb985de71dcd716f9507cc18374b1bd5c4f1a1b879b"},
+    {file = "mashumaro-3.17.tar.gz", hash = "sha256:de1d8b1faffee58969c7f97e35963a92480a38d4c9858e92e0721efec12258ed"},
 ]
 
 [package.dependencies]
-typing-extensions = ">=4.1.0"
+typing_extensions = ">=4.14.0"
 
 [package.extras]
 msgpack = ["msgpack (>=0.5.6)"]
@@ -1344,14 +1344,14 @@ wsproto = ">=0.14"
 
 [[package]]
 name = "typing-extensions"
-version = "4.11.0"
-description = "Backported and Experimental Type Hints for Python 3.8+"
+version = "4.15.0"
+description = "Backported and Experimental Type Hints for Python 3.9+"
 optional = false
-python-versions = ">=3.8"
+python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "typing_extensions-4.11.0-py3-none-any.whl", hash = "sha256:c1f94d72897edaf4ce775bb7558d5b79d8126906a14ea5ed1635921406c0387a"},
-    {file = "typing_extensions-4.11.0.tar.gz", hash = "sha256:83f085bd5ca59c80295fc2a82ab5dac679cbe02b9f33f7d83af68e241bea51b0"},
+    {file = "typing_extensions-4.15.0-py3-none-any.whl", hash = "sha256:f0fa19c6845758ab08074a0cfa8b7aecb71c999ca73d62883bc25cc018c4e548"},
+    {file = "typing_extensions-4.15.0.tar.gz", hash = "sha256:0cea48d173cc12fa28ecabc3b837ea3cf6f38c6d1136f85cbaaf598984861466"},
 ]
 
 [[package]]
@@ -1572,4 +1572,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.10"
-content-hash = "7d847e65c15f214df9b96bce17294aa13b18d4729b6f490ba0ee97b31fa5a5af"
+content-hash = "2f09d174d0f15a2d30a64f2cd1d4078779a501571290c2dc2a86372409bd6153"

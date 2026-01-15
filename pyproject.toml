@@ -18,7 +18,7 @@ dateparser = "^1.1.8"
 curlinate = {path = "../curlinate", develop = true}
 flask = "^2.3.2"
 pytz = "^2024.1"
-mashumaro = "^3.13"
+mashumaro = "^3.17"
 lark = "^1.2.2"
 undetected-chromedriver = "^3.5.5"
 browser-cookie3 = "^0.20.1"
