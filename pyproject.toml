@@ -21,6 +21,7 @@ pytz = "^2024.1"
 mashumaro = "^3.13"
 lark = "^1.2.2"
 undetected-chromedriver = "^3.5.5"
+browser-cookie3 = "^0.20.1"
 
 [tool.poetry.scripts]
 rac = "regex_accountant.cli:main"
