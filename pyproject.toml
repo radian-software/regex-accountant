@@ -10,9 +10,9 @@ packages = [{include = "regex_accountant"}]
 python = "^3.10"
 selenium = "^4.9.1"
 xdg-base-dirs = "^6.0.0"
-pyyaml = "^6.0"
+pyyaml = "^6.0.3"
 beautifulsoup4 = "^4.12.2"
-lxml = "^4.9.2"
+lxml = "^6.0.2"
 pdfminer-six = "^20221105"
 dateparser = "^1.1.8"
 curlinate = {path = "../curlinate", develop = true}
