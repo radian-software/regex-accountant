@@ -79,7 +79,13 @@ def main():
 
         module_name = all_config["accounts"][args.account]["module"]
 
-        module = importlib.import_module(module_name)
+        old_sys_path = sys.path
+        try:
+            sys.path = ["", *sys.path]
+            module = importlib.import_module(module_name)
+        finally:
+            sys.path = old_sys_path
+
         Fetcher: Type[api.Fetcher] = module.Fetcher
         Config: Type[api.Config] = module.Config
         Session: Type[api.Session] = module.Session
