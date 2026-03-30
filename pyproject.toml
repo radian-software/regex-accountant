@@ -15,7 +15,7 @@ beautifulsoup4 = "^4.12.2"
 lxml = "^6.0.2"
 pdfminer-six = "^20221105"
 dateparser = "^1.1.8"
-curlinate = {path = "../curlinate", develop = true}
+curlinate = "^0.0.1"
 flask = "^2.3.2"
 pytz = "^2024.1"
 mashumaro = "^3.17"
