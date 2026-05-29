@@ -26,6 +26,7 @@ def setup_logger(debug: bool):
             "selenium.webdriver.common.selenium_manager",
             "selenium.webdriver.common.service",
             "selenium.webdriver.remote.remote_connection",
+            "tzlocal",
             "urllib3.connectionpool",
             "urllib3.util.retry",
         ):
