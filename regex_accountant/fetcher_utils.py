@@ -1,6 +1,6 @@
 from contextlib import contextmanager
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from functools import total_ordering
 import locale
@@ -19,7 +19,9 @@ def month_sequence(
     start_date: datetime, end_date: datetime
 ) -> typing.Generator[tuple[int, int], None, None]:
     year, month = start_date.year, start_date.month
-    while datetime(year=year, month=month, day=1) < end_date:
+    while (
+        datetime(year=year, month=month, day=1).astimezone(end_date.tzinfo) < end_date
+    ):
         yield year, month
         month += 1
         if month > 12:
@@ -33,6 +35,25 @@ def year_sequence(
     while datetime(year=year, month=1, day=1) < end_date:
         yield year
         year += 1
+
+
+def month_datetime_sequence(
+    start_date: datetime, end_date: datetime
+) -> typing.Generator[tuple[datetime, datetime], None, None]:
+    prev_year = prev_month = -1
+    for year, month in month_sequence(
+        start_date - timedelta(days=60), end_date + timedelta(days=60)
+    ):
+        if prev_year >= 0:
+            month_start = datetime(year=prev_year, month=prev_month, day=1).astimezone(
+                start_date.tzinfo
+            )
+            month_end = datetime(year=year, month=month, day=1).astimezone(
+                start_date.tzinfo
+            )
+            if month_end >= start_date and month_start < end_date:
+                yield month_start, month_end
+        prev_year, prev_month = year, month
 
 
 @dataclass
